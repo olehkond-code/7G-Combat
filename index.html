@@ -28,7 +28,9 @@
     .avatar-preview-circle { width: 42px; height: 42px; border-radius: 50%; border: 2px solid #ff9800; display: flex; justify-content: center; align-items: center; font-size: 24px; background-color: #222; background-size: cover; background-position: center; overflow: hidden; flex-shrink: 0;}
     .profile-info { display: flex; flex-direction: column; justify-content: center; }
     .profile-name { line-height: 1.1; font-size: 16px; }
-    .profile-streak { font-size: 13px; color: #ff9800; display: flex; align-items: center; gap: 4px; margin-top: 3px; }
+    .profile-stats { font-size: 13px; display: flex; align-items: center; gap: 8px; margin-top: 3px; }
+    .stat-streak { color: #ff9800; }
+    .stat-rebirth { color: #00e5ff; }
     
     .player-balance { font-size: 20px; font-weight: bold; color: #fff; white-space: nowrap; }
     .coin-icon { color: #ffeb3b; margin-right: 5px; }
@@ -38,6 +40,7 @@
     .notif-error { background: #330000; color: #ff5252; border: 2px solid #ff5252; box-shadow: 0 0 10px #ff5252; }
     .notif-success { background: #003300; color: #69f0ae; border: 2px solid #69f0ae; box-shadow: 0 0 10px #69f0ae; }
     .notif-admin { background: #2a0033; color: #d500f9; border: 2px solid #d500f9; box-shadow: 0 0 15px #d500f9; }
+    .notif-rebirth { background: #001e33; color: #00e5ff; border: 2px solid #00e5ff; box-shadow: 0 0 15px #00e5ff; }
     
     .minus-money { position: absolute; top: 50px; right: 20px; color: #ff5252; font-size: 20px; font-weight: bold; pointer-events: none; animation: dropDownFade 1.5s ease-out forwards; text-shadow: 0 0 10px #ff5252; z-index: 600; }
     @keyframes dropDownFade { 0% { opacity: 1; transform: translateY(0); } 100% { opacity: 0; transform: translateY(40px); } }
@@ -88,10 +91,17 @@
     .item-owned-badge { font-size: 10px; color: #69f0ae; background: rgba(0,51,0,0.5); padding: 3px 8px; border-radius: 10px; }
     .color-preview { width: 15px; height: 15px; border-radius: 50%; }
 
-    /* БОНУСИ */
-    .promo-container { background: #222; border: 1px solid #444; border-radius: 10px; padding: 15px; display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px;}
+    /* БОНУСИ & ПЕРЕРОДЖЕННЯ */
+    .promo-container { background: #222; border: 1px solid #444; border-radius: 10px; padding: 15px; display: flex; flex-direction: column; gap: 10px; margin-bottom: 15px;}
     .promo-input { background: #111; border: 1px solid #555; color: white; padding: 10px; border-radius: 8px; text-align: center; outline: none;}
     .promo-btn { background: #ff9800; border: none; padding: 10px; border-radius: 8px; color: #111; font-weight: bold; cursor: pointer; }
+    
+    .rebirth-container { background: #111; border: 2px solid #00e5ff; border-radius: 10px; padding: 20px; display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center; box-shadow: 0 0 15px rgba(0, 229, 255, 0.2); margin-bottom: 15px;}
+    .rebirth-title { font-size: 20px; font-weight: bold; color: #00e5ff; }
+    .rebirth-info { font-size: 14px; color: #ccc; }
+    .rebirth-multiplier { font-size: 24px; font-weight: bold; color: #00e5ff; margin: 5px 0; text-shadow: 0 0 10px rgba(0, 229, 255, 0.5); }
+    .rebirth-btn { background: linear-gradient(145deg, #00b0ff, #0091ea); border: none; padding: 12px 20px; border-radius: 8px; color: #fff; font-weight: bold; cursor: pointer; width: 100%; font-size: 15px; box-shadow: 0 4px 10px rgba(0, 176, 255, 0.4); }
+    .rebirth-btn:disabled { background: #333; color: #777; cursor: not-allowed; box-shadow: none; border: 1px solid #555; }
 
     /* АКТИВ (СТРИК) */
     .streak-container { background: #222; border: 2px solid #ff9800; border-radius: 15px; padding: 30px; text-align: center; margin-top: 20px; box-shadow: 0 0 20px rgba(255, 152, 0, 0.2); }
@@ -157,7 +167,10 @@
       <div class="avatar-preview-circle" id="ui-avatar"></div>
       <div class="profile-info">
         <div class="profile-name" id="ui-nickname">Гравець</div>
-        <div class="profile-streak">🔥 <span id="header-streak">1</span></div>
+        <div class="profile-stats">
+          <div class="stat-streak">🔥 <span id="header-streak">1</span></div>
+          <div class="stat-rebirth">🌟 <span id="header-rebirth">0</span></div>
+        </div>
       </div>
     </div>
     <div class="player-balance"><span class="coin-icon">💰</span><span id="global-score">0</span></div>
@@ -190,16 +203,24 @@
 
     <div id="updates-screen" class="screen">
       <div class="screen-header">Оновлення</div>
-      <div class="update-card" style="border-color: #69f0ae;">
-        <div class="update-version"><span style="color:#69f0ae;">v2.3 - Фікс Цифр & Хедер</span></div>
-        <div class="update-desc">Додано "розумне" форматування чисел (1K, 1M, 1B). Тепер мільярди не вилазять за межі екрану! Також вогник активності перенесено в глобальний хедер біля аватару.</div>
+      <div class="update-card" style="border-color: #00e5ff;">
+        <div class="update-version"><span style="color:#00e5ff;">v2.4 - Переродження 🌟</span></div>
+        <div class="update-desc">Додана система перероджень у розділ "Бали". Тепер ви можете збільшувати множник кліку та розблоковувати безкоштовні предмети і кольори.</div>
       </div>
-      <div class="update-card"><div class="update-version">v2.2 - Кастомна накрутка</div><div class="update-desc">Додано можливість вписувати будь-яку кількість монет та днів у адмінці.</div></div>
-      <div class="update-card"><div class="update-version">v2.1 - Промокоди Адміна</div><div class="update-desc">Можливість створювати власні промокоди.</div></div>
+      <div class="update-card"><div class="update-version">v2.3 - Формат чисел</div><div class="update-desc">Великі суми мільйонів та мільярдів тепер красиво скорочуються (1M, 1B).</div></div>
+      <div class="update-card"><div class="update-version">v2.2 - Кастомна накрутка</div><div class="update-desc">Додано можливість вписувати будь-яку кількість монет в адмінці.</div></div>
     </div>
 
     <div id="bonus-screen" class="screen">
-      <div class="screen-header">Бонуси</div>
+      <div class="screen-header">Бонуси & Переродження</div>
+      
+      <div class="rebirth-container">
+        <div class="rebirth-title">🌟 ПЕРЕРОДЖЕННЯ</div>
+        <div class="rebirth-info">Скидає прогрес очок, але збільшує силу тапу назавжди! Також розблоковує 1 новий предмет і 1 колір.</div>
+        <div class="rebirth-multiplier">Сила тапу: +<span id="ui-click-power">1</span></div>
+        <button class="rebirth-btn" id="btn-rebirth" onclick="doRebirth()">Переродитися (🪙 <span id="rebirth-cost-text">1 000</span>)</button>
+      </div>
+
       <div class="promo-container">
         <div style="font-weight:bold; color:#ff9800; text-align:center;">Промокод</div>
         <input type="text" id="promo-input" class="promo-input" placeholder="Код...">
@@ -224,6 +245,12 @@
       <div class="screen-header" style="color: #d500f9;">God Mode ⚡</div>
       <div class="block-title" style="text-align:center; color: #fff;">Привіт, Творець!</div>
       
+      <div class="admin-promo-box">
+        <div style="color: #d500f9; font-weight: bold; font-size: 14px;">🌟 Накрутка Перероджень</div>
+        <input type="number" id="admin-rebirth-val" class="auth-input" placeholder="Кількість..." style="width: 100%; margin-bottom: 5px; padding: 8px;">
+        <button class="admin-btn" onclick="adminGiveCustomRebirths()" style="margin-bottom: 0; padding: 10px; font-size: 14px;">Видати переродження</button>
+      </div>
+
       <div class="admin-promo-box">
         <div style="color: #d500f9; font-weight: bold; font-size: 14px;">💰 Накрутка монет</div>
         <input type="number" id="admin-coin-val" class="auth-input" placeholder="Введіть суму..." style="width: 100%; margin-bottom: 5px; padding: 8px;">
@@ -263,7 +290,8 @@
       username: "", avatarType: "emoji", avatarData: "😎", score: 0,
       ownedSubjects: ['music'], ownedColors: ['default'],
       currentSubjectId: 'music', currentColorId: 'default', usedPromoCodes: [],
-      streak: 1, lastLoginDate: 0, customPromos: {}
+      streak: 1, lastLoginDate: 0, customPromos: {},
+      rebirths: 0 // Нова змінна для перероджень
     };
 
     let tempRegAvatarType = "emoji";
@@ -289,6 +317,9 @@
       { id: 'rainbow', name: 'Веселковий', price: 10000, bg: 'linear-gradient(45deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #9400d3)', edge: '#4b0082', glow: 'rgba(255, 255, 255, 0.8)' }
     ];
 
+    // Ціни на переродження (всього 12, щоб розблокувати 12 предметів)
+    const rebirthCosts = [1000, 5000, 15000, 50000, 150000, 500000, 1000000, 2500000, 5000000, 10000000, 25000000, 50000000];
+
     // --- ФОРМАТУВАННЯ ЧИСЕЛ ---
     function formatScore(num) {
       if (num >= 1e12) return (num / 1e12).toFixed(2).replace(/\.00$/, '') + 'T';
@@ -301,7 +332,11 @@
     function saveProgress() { localStorage.setItem('schoolClickerSave', JSON.stringify(userData)); }
     function loadProgress() {
       const saved = localStorage.getItem('schoolClickerSave');
-      if (saved) { userData = { ...userData, ...JSON.parse(saved) }; return true; }
+      if (saved) { 
+        userData = { ...userData, ...JSON.parse(saved) }; 
+        userData.rebirths = userData.rebirths || 0; // Для старих гравців
+        return true; 
+      }
       return false;
     }
 
@@ -324,9 +359,7 @@
         document.getElementById('nav-admin').style.display = 'flex';
       } else {
         document.getElementById('nav-admin').style.display = 'none';
-        if(document.getElementById('admin-screen').classList.contains('active')){
-            switchTab('game-screen', 'nav-game'); 
-        }
+        if(document.getElementById('admin-screen').classList.contains('active')) switchTab('game-screen', 'nav-game'); 
       }
     }
 
@@ -376,9 +409,7 @@
       else { el.style.backgroundImage = 'none'; el.innerHTML = data; }
     }
     
-    function updateGlobalAvatar() { 
-      renderAvatarPreview('ui-avatar', userData.avatarType, userData.avatarData); 
-    }
+    function updateGlobalAvatar() { renderAvatarPreview('ui-avatar', userData.avatarType, userData.avatarData); }
 
     function updateScoreUI() {
       const formattedScore = formatScore(userData.score);
@@ -391,14 +422,56 @@
       el.innerText = text; 
       if(type === 'error') el.className = 'notif-error';
       else if(type === 'admin') el.className = 'notif-admin';
+      else if(type === 'rebirth') el.className = 'notif-rebirth';
       else el.className = 'notif-success';
       
       el.style.top = '20px'; setTimeout(() => { el.style.top = '-100px'; }, 2000);
     }
 
+    // --- ПЕРЕРОДЖЕННЯ (ЛОГІКА) ---
+    function updateRebirthUI() {
+      document.getElementById('header-rebirth').innerText = userData.rebirths;
+      document.getElementById('ui-click-power').innerText = (1 + userData.rebirths);
+      
+      const btn = document.getElementById('btn-rebirth');
+      if (userData.rebirths >= rebirthCosts.length) {
+        btn.innerText = "ДОСЯГНУТО МАКСИМУМУ";
+        btn.disabled = true;
+      } else {
+        btn.innerHTML = `Переродитися (🪙 ${formatScore(rebirthCosts[userData.rebirths])})`;
+      }
+    }
+
+    function doRebirth() {
+      if (userData.rebirths >= rebirthCosts.length) return;
+      const cost = rebirthCosts[userData.rebirths];
+      
+      if (userData.score >= cost) {
+        userData.score -= cost;
+        userData.rebirths++;
+        
+        // Розблоковуємо наступний предмет
+        if (userData.rebirths < subjectsList.length) {
+          const nextSubj = subjectsList[userData.rebirths];
+          if (!userData.ownedSubjects.includes(nextSubj.id)) userData.ownedSubjects.push(nextSubj.id);
+        }
+        
+        // Розблоковуємо наступний колір (якщо є)
+        if (userData.rebirths < colorsList.length) {
+          const nextCol = colorsList[userData.rebirths];
+          if (!userData.ownedColors.includes(nextCol.id)) userData.ownedColors.push(nextCol.id);
+        }
+        
+        updateScoreUI(); updateRebirthUI(); saveProgress(); renderShop();
+        showNotification('🌟 ПЕРЕРОДЖЕННЯ УСПІШНЕ!', 'rebirth');
+      } else {
+        showNotification('Не вистачає монет!', 'error');
+      }
+    }
+
     function startGameUI() {
       document.getElementById("ui-nickname").innerText = userData.username;
-      updateGlobalAvatar(); checkStreak(); checkAdminStatus(); updateScoreUI();
+      updateGlobalAvatar(); checkStreak(); checkAdminStatus(); updateScoreUI(); updateRebirthUI();
       document.getElementById("settings-nickname").value = userData.username;
       renderAvatarPreview('settings-avatar-preview', userData.avatarType, userData.avatarData);
       
@@ -418,20 +491,26 @@
     function adminGiveCustomCoins() {
       const val = parseInt(document.getElementById('admin-coin-val').value);
       if (isNaN(val) || val <= 0) { showNotification('Введіть правильну суму!', 'error'); return; }
-      userData.score += val; updateScoreUI(); saveProgress();
-      showNotification(`ВИДАНО +${formatScore(val)} 💰`, 'admin');
+      userData.score += val; updateScoreUI(); saveProgress(); showNotification(`ВИДАНО +${formatScore(val)} 💰`, 'admin');
       document.getElementById('admin-coin-val').value = '';
     }
 
     function adminGiveCustomStreak() {
       const val = parseInt(document.getElementById('admin-streak-val').value);
       if (isNaN(val) || val <= 0) { showNotification('Введіть правильну кількість!', 'error'); return; }
-      userData.streak += val; 
-      document.getElementById('ui-streak').innerText = userData.streak;
-      document.getElementById('header-streak').innerText = userData.streak;
-      saveProgress();
-      showNotification(`ВИДАНО +${val} ДНІВ 🔥`, 'admin');
-      document.getElementById('admin-streak-val').value = '';
+      userData.streak += val; document.getElementById('ui-streak').innerText = userData.streak; document.getElementById('header-streak').innerText = userData.streak;
+      saveProgress(); showNotification(`ВИДАНО +${val} ДНІВ 🔥`, 'admin'); document.getElementById('admin-streak-val').value = '';
+    }
+
+    function adminGiveCustomRebirths() {
+      const val = parseInt(document.getElementById('admin-rebirth-val').value);
+      if (isNaN(val) || val <= 0) { showNotification('Введіть правильну кількість!', 'error'); return; }
+      
+      for(let i=0; i<val; i++) {
+        if(userData.rebirths < rebirthCosts.length) userData.rebirths++;
+      }
+      updateRebirthUI(); saveProgress(); showNotification(`ВИДАНО +${val} 🌟`, 'admin');
+      document.getElementById('admin-rebirth-val').value = '';
     }
 
     function adminUnlockAll() {
@@ -441,26 +520,21 @@
     }
 
     function adminAddPromo() {
-      const nameInput = document.getElementById('admin-promo-name');
-      const rewardInput = document.getElementById('admin-promo-reward');
-      const name = nameInput.value.trim();
-      const reward = parseInt(rewardInput.value.trim());
-
+      const nameInput = document.getElementById('admin-promo-name'); const rewardInput = document.getElementById('admin-promo-reward');
+      const name = nameInput.value.trim(); const reward = parseInt(rewardInput.value.trim());
       if (name.length < 3) { showNotification('Код занадто короткий!', 'error'); return; }
       if (isNaN(reward) || reward <= 0) { showNotification('Введіть правильну суму!', 'error'); return; }
-
       if (!userData.customPromos) userData.customPromos = {};
       userData.customPromos[name] = reward; saveProgress();
-
-      showNotification(`Код ${name} створено!`, 'admin');
-      nameInput.value = ''; rewardInput.value = '';
+      showNotification(`Код ${name} створено!`, 'admin'); nameInput.value = ''; rewardInput.value = '';
     }
 
     // ТАП
     document.getElementById("tap-zone").addEventListener('click', (e) => {
-      userData.score++; updateScoreUI(); saveProgress();
+      const clickPower = 1 + userData.rebirths;
+      userData.score += clickPower; updateScoreUI(); saveProgress();
       if (navigator.vibrate) navigator.vibrate(50);
-      const p = document.createElement('span'); p.className = 'plus-one'; p.innerText = '+1';
+      const p = document.createElement('span'); p.className = 'plus-one'; p.innerText = '+' + clickPower;
       p.style.left = `${e.clientX}px`; p.style.top = `${e.clientY}px`;
       document.body.appendChild(p); setTimeout(() => p.remove(), 2000);
     });
@@ -513,18 +587,16 @@
     function applyPromoCode() {
       const el = document.getElementById('promo-input'); const code = el.value.trim();
       if (code === '') return;
-      
       let reward = 0;
       
       if (code === 'OleKon7gcombat') { reward = 100; } 
       else if (userData.customPromos && userData.customPromos[code]) { reward = userData.customPromos[code]; }
 
       if (reward > 0) {
-        if (userData.usedPromoCodes.includes(code)) {
-          showNotification('Вже використано!', 'error');
-        } else {
-          userData.score += reward; userData.usedPromoCodes.push(code); 
-          updateScoreUI(); saveProgress(); showNotification(`Активовано! +${formatScore(reward)}`, 'success'); el.value = ''; 
+        if (userData.usedPromoCodes.includes(code)) { showNotification('Вже використано!', 'error'); } 
+        else {
+          userData.score += reward; userData.usedPromoCodes.push(code); updateScoreUI(); saveProgress(); 
+          showNotification(`Активовано! +${formatScore(reward)}`, 'success'); el.value = ''; 
         }
       } else { showNotification('Неправильний код!', 'error'); }
     }
