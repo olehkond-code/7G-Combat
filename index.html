@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Tap Game</title>
+  <style>
+    body {
+      text-align: center;
+      font-family: Arial;
+      background: #111;
+      color: white;
+    }
+
+    button {
+      font-size: 30px;
+      padding: 20px;
+      border-radius: 10px;
+      background: orange;
+      border: none;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Очки: <span id="score">0</span></h1>
+
+  <button onclick="tap()">Тапай!</button>
+
+  <script>
+    let score = 0;
+
+    function tap() {
+      score++;
+      document.getElementById("score").innerText = score;
+    }
+  </script>
+
+</body>
+</html>
