@@ -2,29 +2,90 @@
 <html>
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Tap Game</title>
   <style>
     body {
       text-align: center;
-      font-family: Arial;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       background: #111;
       color: white;
+      margin: 0;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+    }
+
+    /* --- Стили экрана загрузки --- */
+    #loader {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    /* Крутящееся колечко */
+    .spinner {
+      width: 60px;
+      height: 60px;
+      border: 6px solid rgba(255, 255, 255, 0.1);
+      border-top-color: orange;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-bottom: 20px;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* --- Стили самой игры --- */
+    #game {
+      display: none; /* Скрываем игру при старте */
+      animation: fadeIn 1s; /* Плавное появление */
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    h1 {
+      font-size: 40px;
+      margin-bottom: 40px;
     }
 
     button {
       font-size: 30px;
-      padding: 20px;
-      border-radius: 10px;
+      padding: 20px 50px;
+      border-radius: 20px;
       background: orange;
       border: none;
+      color: #111;
+      font-weight: bold;
+      cursor: pointer;
+      box-shadow: 0 5px 15px rgba(255, 165, 0, 0.4);
+    }
+    
+    /* Эффект нажатия на кнопку */
+    button:active {
+      transform: scale(0.95);
+      box-shadow: 0 2px 10px rgba(255, 165, 0, 0.4);
     }
   </style>
 </head>
 <body>
 
-  <h1>Очки: <span id="score">0</span></h1>
+  <div id="loader">
+    <div class="spinner"></div>
+    <h2>Загрузка...</h2>
+  </div>
 
-  <button onclick="tap()">Тапай!</button>
+  <div id="game">
+    <h1>Очки: <span id="score">0</span></h1>
+    <button onclick="tap()">Тапай!</button>
+  </div>
 
   <script>
     let score = 0;
@@ -33,6 +94,14 @@
       score++;
       document.getElementById("score").innerText = score;
     }
+
+    // Скрипт для скрытия загрузки через 2.5 секунды (2500 миллисекунд)
+    window.onload = function() {
+      setTimeout(function() {
+        document.getElementById("loader").style.display = "none";
+        document.getElementById("game").style.display = "block";
+      }, 2500);
+    };
   </script>
 
 </body>
