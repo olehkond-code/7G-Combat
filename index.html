@@ -25,8 +25,12 @@
       box-sizing: border-box; z-index: 500; background: linear-gradient(to bottom, rgba(0,0,0,0.9), transparent);
     }
     .player-profile { display: flex; align-items: center; gap: 10px; font-weight: bold; font-size: 16px; }
-    .avatar-preview-circle { width: 40px; height: 40px; border-radius: 50%; border: 2px solid #ff9800; display: flex; justify-content: center; align-items: center; font-size: 24px; background-color: #222; background-size: cover; background-position: center; overflow: hidden; }
-    .player-balance { font-size: 20px; font-weight: bold; color: #fff; }
+    .avatar-preview-circle { width: 42px; height: 42px; border-radius: 50%; border: 2px solid #ff9800; display: flex; justify-content: center; align-items: center; font-size: 24px; background-color: #222; background-size: cover; background-position: center; overflow: hidden; flex-shrink: 0;}
+    .profile-info { display: flex; flex-direction: column; justify-content: center; }
+    .profile-name { line-height: 1.1; font-size: 16px; }
+    .profile-streak { font-size: 13px; color: #ff9800; display: flex; align-items: center; gap: 4px; margin-top: 3px; }
+    
+    .player-balance { font-size: 20px; font-weight: bold; color: #fff; white-space: nowrap; }
     .coin-icon { color: #ffeb3b; margin-right: 5px; }
 
     /* --- ПОВІДОМЛЕННЯ --- */
@@ -61,8 +65,8 @@
 
     /* ТАПАЛКА */
     #game-screen { justify-content: center; align-items: center; padding-bottom: 80px; overflow: hidden;}
-    .score-container { font-size: 56px; font-weight: bold; margin-bottom: 30px; text-shadow: 0 2px 10px rgba(255, 255, 255, 0.3); }
-    .circle-area { position: relative; width: 260px; height: 260px; perspective: 1000px; }
+    .score-container { font-size: clamp(40px, 12vw, 64px); font-weight: bold; margin-bottom: 30px; text-shadow: 0 2px 10px rgba(255, 255, 255, 0.3); text-align: center; width: 100%; white-space: nowrap; }
+    .circle-area { position: relative; width: 260px; height: 260px; perspective: 1000px; flex-shrink: 0; }
     .coin { width: 100%; height: 100%; background: var(--coin-bg); border-radius: 50%; display: flex; justify-content: center; align-items: center; box-shadow: 0 10px 0 var(--coin-edge), 0 15px 30px rgba(0,0,0,0.5), inset 0 2px 5px rgba(255,255,255,0.5), 0 0 20px var(--coin-glow); transition: 0.1s; cursor: pointer; }
     .coin::after { content: ''; position: absolute; top: 12px; left: 12px; right: 12px; bottom: 12px; border: 4px dashed rgba(255,255,255,0.3); border-radius: 50%; }
     .coin-text { font-size: 30px; font-weight: 900; color: #111; text-transform: uppercase; z-index: 10; text-align: center; }
@@ -117,7 +121,6 @@
     .nav-item.active { color: #ff9800; }
     .nav-item.active .nav-icon { background-color: #ff9800; box-shadow: 0 0 10px rgba(255, 152, 0, 0.5); color: #111;}
     
-    /* Спеціальний стиль для адмін-кнопки в меню */
     #nav-admin { display: none; color: #d500f9; }
     #nav-admin .nav-icon { background-color: transparent; border: 1px solid #d500f9; color: #d500f9; }
     #nav-admin.active .nav-icon { background-color: #d500f9; box-shadow: 0 0 10px #d500f9; color: #fff; }
@@ -150,7 +153,13 @@
   </div>
 
   <div id="global-header">
-    <div class="player-profile"><div class="avatar-preview-circle" id="ui-avatar"></div><div id="ui-nickname">Гравець</div></div>
+    <div class="player-profile">
+      <div class="avatar-preview-circle" id="ui-avatar"></div>
+      <div class="profile-info">
+        <div class="profile-name" id="ui-nickname">Гравець</div>
+        <div class="profile-streak">🔥 <span id="header-streak">1</span></div>
+      </div>
+    </div>
     <div class="player-balance"><span class="coin-icon">💰</span><span id="global-score">0</span></div>
   </div>
 
@@ -181,12 +190,12 @@
 
     <div id="updates-screen" class="screen">
       <div class="screen-header">Оновлення</div>
-      <div class="update-card" style="border-color: #d500f9;">
-        <div class="update-version"><span style="color:#d500f9;">v2.2 - Кастомна накрутка</span></div>
-        <div class="update-desc">Додано можливість вписувати будь-яку кількість монет та днів активу в адмін-панелі.</div>
+      <div class="update-card" style="border-color: #69f0ae;">
+        <div class="update-version"><span style="color:#69f0ae;">v2.3 - Фікс Цифр & Хедер</span></div>
+        <div class="update-desc">Додано "розумне" форматування чисел (1K, 1M, 1B). Тепер мільярди не вилазять за межі екрану! Також вогник активності перенесено в глобальний хедер біля аватару.</div>
       </div>
-      <div class="update-card"><div class="update-version">v2.1 - Промокоди Адміна</div><div class="update-desc">Додано можливість створювати власні промокоди.</div></div>
-      <div class="update-card"><div class="update-version">v2.0 - Адмін Панель</div><div class="update-desc">Створена секретна консоль розробника.</div></div>
+      <div class="update-card"><div class="update-version">v2.2 - Кастомна накрутка</div><div class="update-desc">Додано можливість вписувати будь-яку кількість монет та днів у адмінці.</div></div>
+      <div class="update-card"><div class="update-version">v2.1 - Промокоди Адміна</div><div class="update-desc">Можливість створювати власні промокоди.</div></div>
     </div>
 
     <div id="bonus-screen" class="screen">
@@ -235,7 +244,6 @@
         <input type="number" id="admin-promo-reward" class="auth-input" placeholder="Сума монет" style="width: 100%; margin-bottom: 5px; padding: 8px;">
         <button class="admin-btn" onclick="adminAddPromo()" style="margin-bottom: 0; padding: 10px; font-size: 14px;">➕ Створити код</button>
       </div>
-
     </div>
 
     <div class="bottom-nav">
@@ -281,6 +289,14 @@
       { id: 'rainbow', name: 'Веселковий', price: 10000, bg: 'linear-gradient(45deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #9400d3)', edge: '#4b0082', glow: 'rgba(255, 255, 255, 0.8)' }
     ];
 
+    // --- ФОРМАТУВАННЯ ЧИСЕЛ ---
+    function formatScore(num) {
+      if (num >= 1e12) return (num / 1e12).toFixed(2).replace(/\.00$/, '') + 'T';
+      if (num >= 1e9) return (num / 1e9).toFixed(2).replace(/\.00$/, '') + 'B';
+      if (num >= 1e6) return (num / 1e6).toFixed(2).replace(/\.00$/, '') + 'M';
+      return num.toLocaleString('en-US').replace(/,/g, ' '); 
+    }
+
     // --- СИСТЕМА ЗБЕРЕЖЕННЯ ---
     function saveProgress() { localStorage.setItem('schoolClickerSave', JSON.stringify(userData)); }
     function loadProgress() {
@@ -298,7 +314,9 @@
         if (diffDays === 1) { userData.streak++; } else if (diffDays > 1) { userData.streak = 1; }
         userData.lastLoginDate = todayTime;
       }
-      document.getElementById('ui-streak').innerText = userData.streak; saveProgress();
+      document.getElementById('ui-streak').innerText = userData.streak;
+      document.getElementById('header-streak').innerText = userData.streak;
+      saveProgress();
     }
 
     function checkAdminStatus() {
@@ -307,12 +325,12 @@
       } else {
         document.getElementById('nav-admin').style.display = 'none';
         if(document.getElementById('admin-screen').classList.contains('active')){
-            switchTab('game-screen', 'nav-game'); // Викинути з адмінки, якщо змінив ім'я
+            switchTab('game-screen', 'nav-game'); 
         }
       }
     }
 
-    // --- АВТОРИЗАЦІЯ ---
+    // --- АВТОРИЗАЦІЯ ТА ФОТО ---
     function handleFileUpload(event, source) {
       const file = event.target.files[0];
       if (file) {
@@ -357,11 +375,15 @@
       if (type === 'image') { el.innerHTML = ''; el.style.backgroundImage = `url(${data})`; } 
       else { el.style.backgroundImage = 'none'; el.innerHTML = data; }
     }
-    function updateGlobalAvatar() { renderAvatarPreview('ui-avatar', userData.avatarType, userData.avatarData); }
+    
+    function updateGlobalAvatar() { 
+      renderAvatarPreview('ui-avatar', userData.avatarType, userData.avatarData); 
+    }
 
     function updateScoreUI() {
-      document.getElementById("big-score").innerText = userData.score;
-      document.getElementById("global-score").innerText = userData.score;
+      const formattedScore = formatScore(userData.score);
+      document.getElementById("big-score").innerText = formattedScore;
+      document.getElementById("global-score").innerText = formattedScore;
     }
 
     function showNotification(text, type) {
@@ -376,7 +398,7 @@
 
     function startGameUI() {
       document.getElementById("ui-nickname").innerText = userData.username;
-      updateGlobalAvatar(); updateScoreUI(); checkStreak(); checkAdminStatus();
+      updateGlobalAvatar(); checkStreak(); checkAdminStatus(); updateScoreUI();
       document.getElementById("settings-nickname").value = userData.username;
       renderAvatarPreview('settings-avatar-preview', userData.avatarType, userData.avatarData);
       
@@ -395,23 +417,18 @@
     // --- ФУНКЦІЇ АДМІНА ---
     function adminGiveCustomCoins() {
       const val = parseInt(document.getElementById('admin-coin-val').value);
-      if (isNaN(val) || val <= 0) {
-        showNotification('Введіть правильну суму!', 'error'); return;
-      }
-      userData.score += val;
-      updateScoreUI();
-      saveProgress();
-      showNotification(`ВИДАНО +${val} 💰`, 'admin');
+      if (isNaN(val) || val <= 0) { showNotification('Введіть правильну суму!', 'error'); return; }
+      userData.score += val; updateScoreUI(); saveProgress();
+      showNotification(`ВИДАНО +${formatScore(val)} 💰`, 'admin');
       document.getElementById('admin-coin-val').value = '';
     }
 
     function adminGiveCustomStreak() {
       const val = parseInt(document.getElementById('admin-streak-val').value);
-      if (isNaN(val) || val <= 0) {
-        showNotification('Введіть правильну кількість!', 'error'); return;
-      }
-      userData.streak += val;
+      if (isNaN(val) || val <= 0) { showNotification('Введіть правильну кількість!', 'error'); return; }
+      userData.streak += val; 
       document.getElementById('ui-streak').innerText = userData.streak;
+      document.getElementById('header-streak').innerText = userData.streak;
       saveProgress();
       showNotification(`ВИДАНО +${val} ДНІВ 🔥`, 'admin');
       document.getElementById('admin-streak-val').value = '';
@@ -429,16 +446,11 @@
       const name = nameInput.value.trim();
       const reward = parseInt(rewardInput.value.trim());
 
-      if (name.length < 3) {
-        showNotification('Код занадто короткий!', 'error'); return;
-      }
-      if (isNaN(reward) || reward <= 0) {
-        showNotification('Введіть правильну суму!', 'error'); return;
-      }
+      if (name.length < 3) { showNotification('Код занадто короткий!', 'error'); return; }
+      if (isNaN(reward) || reward <= 0) { showNotification('Введіть правильну суму!', 'error'); return; }
 
       if (!userData.customPromos) userData.customPromos = {};
-      userData.customPromos[name] = reward;
-      saveProgress();
+      userData.customPromos[name] = reward; saveProgress();
 
       showNotification(`Код ${name} створено!`, 'admin');
       nameInput.value = ''; rewardInput.value = '';
@@ -468,13 +480,13 @@
 
       subjectsList.forEach(item => {
         const card = document.createElement('div'); card.className = `shop-card ${userData.ownedSubjects.includes(item.id) ? 'owned' : ''} ${userData.currentSubjectId === item.id ? 'selected' : ''}`;
-        card.innerHTML = `<span class="item-name">${item.name}</span>${userData.ownedSubjects.includes(item.id) ? '<div class="item-owned-badge">Куплено</div>' : `<div class="item-price">🪙 ${item.price}</div>`}`;
+        card.innerHTML = `<span class="item-name">${item.name}</span>${userData.ownedSubjects.includes(item.id) ? '<div class="item-owned-badge">Куплено</div>' : `<div class="item-price">🪙 ${formatScore(item.price)}</div>`}`;
         card.onclick = () => handlePurchase('subject', item); sCont.appendChild(card);
       });
 
       colorsList.forEach(item => {
         const card = document.createElement('div'); card.className = `shop-card ${userData.ownedColors.includes(item.id) ? 'owned' : ''} ${userData.currentColorId === item.id ? 'selected' : ''}`;
-        card.innerHTML = `<div class="color-preview" style="background:${item.bg}"></div><span class="item-name">${item.name}</span>${userData.ownedColors.includes(item.id) ? '<div class="item-owned-badge">Куплено</div>' : `<div class="item-price">🪙 ${item.price}</div>`}`;
+        card.innerHTML = `<div class="color-preview" style="background:${item.bg}"></div><span class="item-name">${item.name}</span>${userData.ownedColors.includes(item.id) ? '<div class="item-owned-badge">Куплено</div>' : `<div class="item-price">🪙 ${formatScore(item.price)}</div>`}`;
         card.onclick = () => handlePurchase('color', item); cCont.appendChild(card);
       });
     }
@@ -487,7 +499,7 @@
       } else if (userData.score >= item.price) {
         userData.score -= item.price; updateScoreUI(); 
         
-        const minus = document.createElement('div'); minus.className = 'minus-money'; minus.innerText = `-${item.price}`;
+        const minus = document.createElement('div'); minus.className = 'minus-money'; minus.innerText = `-${formatScore(item.price)}`;
         document.body.appendChild(minus); setTimeout(() => minus.remove(), 1500);
 
         showNotification('Куплено!', 'success');
@@ -504,26 +516,17 @@
       
       let reward = 0;
       
-      if (code === 'OleKon7gcombat') {
-        reward = 100;
-      } else if (userData.customPromos && userData.customPromos[code]) {
-        reward = userData.customPromos[code];
-      }
+      if (code === 'OleKon7gcombat') { reward = 100; } 
+      else if (userData.customPromos && userData.customPromos[code]) { reward = userData.customPromos[code]; }
 
       if (reward > 0) {
         if (userData.usedPromoCodes.includes(code)) {
           showNotification('Вже використано!', 'error');
         } else {
-          userData.score += reward; 
-          userData.usedPromoCodes.push(code); 
-          updateScoreUI(); 
-          saveProgress(); 
-          showNotification(`Активовано! +${reward}`, 'success'); 
-          el.value = ''; 
+          userData.score += reward; userData.usedPromoCodes.push(code); 
+          updateScoreUI(); saveProgress(); showNotification(`Активовано! +${formatScore(reward)}`, 'success'); el.value = ''; 
         }
-      } else {
-        showNotification('Неправильний код!', 'error');
-      }
+      } else { showNotification('Неправильний код!', 'error'); }
     }
 
     window.onload = function() {
