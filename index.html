@@ -66,9 +66,9 @@
     .screen.active { display: flex; flex-direction: column; animation: fadeIn 0.3s; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-    /* ТАПАЛКА */
+    /* ТАПАЛКА ТА ЕНЕРГІЯ */
     #game-screen { justify-content: center; align-items: center; padding-bottom: 80px; overflow: hidden;}
-    .score-container { font-size: clamp(40px, 12vw, 64px); font-weight: bold; margin-bottom: 30px; text-shadow: 0 2px 10px rgba(255, 255, 255, 0.3); text-align: center; width: 100%; white-space: nowrap; }
+    .score-container { font-size: clamp(40px, 12vw, 64px); font-weight: bold; margin-bottom: 20px; text-shadow: 0 2px 10px rgba(255, 255, 255, 0.3); text-align: center; width: 100%; white-space: nowrap; }
     .circle-area { position: relative; width: 260px; height: 260px; perspective: 1000px; flex-shrink: 0; }
     .coin { width: 100%; height: 100%; background: var(--coin-bg); border-radius: 50%; display: flex; justify-content: center; align-items: center; box-shadow: 0 10px 0 var(--coin-edge), 0 15px 30px rgba(0,0,0,0.5), inset 0 2px 5px rgba(255,255,255,0.5), 0 0 20px var(--coin-glow); transition: 0.1s; cursor: pointer; }
     .coin::after { content: ''; position: absolute; top: 12px; left: 12px; right: 12px; bottom: 12px; border: 4px dashed rgba(255,255,255,0.3); border-radius: 50%; }
@@ -76,6 +76,14 @@
     .coin:active { transform: translateY(5px) rotateX(10deg); box-shadow: 0 5px 0 var(--coin-edge), 0 10px 20px rgba(0,0,0,0.5); }
     .plus-one { position: absolute; color: #fff; font-size: 35px; font-weight: 900; pointer-events: none; animation: floatUpFadeOut 2s ease-out; opacity: 0; z-index: 100; text-shadow: 0 0 10px #fff; }
     @keyframes floatUpFadeOut { 0% { opacity: 0; transform: translate(-50%, -50%) translateY(0); } 5% { opacity: 1; transform: translate(-50%, -50%) translateY(-20px) scale(1.2); } 100% { opacity: 0; transform: translate(-50%, -50%) translateY(-200px); } }
+
+    /* БЛОК ЕНЕРГІЇ */
+    .energy-container { margin-top: 35px; width: 80%; max-width: 260px; display: flex; flex-direction: column; align-items: center; gap: 5px;}
+    .energy-bar { width: 100%; height: 12px; background: #333; border-radius: 10px; overflow: hidden; border: 2px solid #555; position: relative;}
+    .energy-fill { height: 100%; width: 100%; background: linear-gradient(90deg, #ff9800, #ffeb3b); transition: width 0.1s; }
+    .energy-text { font-size: 14px; font-weight: bold; color: #fff; }
+    .energy-cooldown-text { color: #ff5252; font-size: 12px; font-weight: bold; animation: blink 1s infinite; display: none; }
+    @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
 
     /* СПІЛЬНІ СТИЛІ ЕКРАНІВ */
     .screen-header { font-size: 22px; font-weight: bold; margin-bottom: 15px; color: #ff9800; text-align: center; border-bottom: 1px solid #333; padding-bottom: 10px;}
@@ -193,7 +201,14 @@
 
     <div id="game-screen" class="screen active">
       <div class="score-container" id="big-score">0</div>
+      
       <div class="circle-area"><div class="coin" id="tap-zone"><span class="coin-text" id="main-coin-text">Музика</span></div></div>
+      
+      <div class="energy-container">
+        <div class="energy-bar"><div class="energy-fill" id="ui-energy-fill"></div></div>
+        <div class="energy-text">⚡ <span id="ui-energy-val">10000</span> / 10000</div>
+        <div class="energy-cooldown-text" id="ui-cooldown-timer">Відпочинок: 15:00</div>
+      </div>
     </div>
 
     <div id="bonus-screen" class="screen">
@@ -230,6 +245,8 @@
       <div class="screen-header" style="color: #d500f9;">God Mode ⚡</div>
       <div class="block-title" style="text-align:center; color: #fff;">Привіт, Творець!</div>
       
+      <button class="admin-btn" onclick="adminResetCooldown()" style="border-color: #ffeb3b; color: #ffeb3b; text-shadow: 0 0 5px #ffeb3b;">⚡ Відновити енергію</button>
+
       <div class="admin-promo-box">
         <div style="color: #d500f9; font-weight: bold; font-size: 14px;">🌟 Накрутка Перероджень</div>
         <input type="number" id="admin-rebirth-val" class="auth-input" placeholder="Кількість..." style="width: 100%; margin-bottom: 5px; padding: 8px;">
@@ -270,17 +287,15 @@
 
   <script>
     // --- АУДІО (ЗВУКИ) ---
-    // ВАЖЛИВО: Щоб звуки працювали, завантаж ці 4 файли (.mp3) на свій GitHub!
     const sfxTap = new Audio('tap.mp3');
     const sfxBuy = new Audio('buy.mp3');
     const sfxError = new Audio('error.mp3');
     const sfxSuccess = new Audio('success.mp3');
-    // Робимо клік трохи тихішим
     sfxTap.volume = 0.4;
 
     function playSound(audioObj) {
-      audioObj.currentTime = 0; // Скидаємо на початок, щоб можна було клікати швидко
-      audioObj.play().catch(e => { /* Ігноруємо помилки, якщо браузер блокує звук до першого кліку */ });
+      audioObj.currentTime = 0; 
+      audioObj.play().catch(e => { });
     }
 
     // --- ДАНІ ГРАВЦЯ ---
@@ -288,9 +303,12 @@
       username: "", avatarType: "emoji", avatarData: "😎", score: 0,
       ownedSubjects: ['music'], ownedColors: ['default'],
       currentSubjectId: 'music', currentColorId: 'default', usedPromoCodes: [],
-      streak: 1, lastLoginDate: 0, customPromos: {},
-      rebirths: 0 
+      streak: 1, lastLoginDate: 0, customPromos: {}, rebirths: 0,
+      energy: 10000, cooldownUntil: 0 // Змінні для енергії
     };
+
+    const MAX_ENERGY = 10000;
+    const COOLDOWN_MS = 15 * 60 * 1000; // 15 хвилин
 
     let tempRegAvatarType = "emoji";
     let tempRegAvatarData = "😎";
@@ -340,6 +358,8 @@
       if (saved) { 
         userData = { ...userData, ...JSON.parse(saved) }; 
         userData.rebirths = userData.rebirths || 0; 
+        if (userData.energy === undefined) userData.energy = MAX_ENERGY;
+        if (userData.cooldownUntil === undefined) userData.cooldownUntil = 0;
         return true; 
       }
       return false;
@@ -367,6 +387,50 @@
         if(document.getElementById('admin-screen').classList.contains('active')) switchTab('game-screen', 'nav-game'); 
       }
     }
+
+    // --- ЕНЕРГІЯ ТА КУЛДАУН ---
+    function updateEnergyUI() {
+      const now = Date.now();
+      const fillEl = document.getElementById('ui-energy-fill');
+      const textEl = document.getElementById('ui-energy-val');
+      const timerEl = document.getElementById('ui-cooldown-timer');
+
+      if (now < userData.cooldownUntil) {
+        // Ми в кулдауні
+        userData.energy = 0;
+        fillEl.style.width = '0%';
+        textEl.innerText = '0';
+        
+        const remainingMs = userData.cooldownUntil - now;
+        const mins = Math.floor(remainingMs / 60000);
+        const secs = Math.floor((remainingMs % 60000) / 1000);
+        timerEl.innerText = `Відпочинок: ${mins}:${secs < 10 ? '0' : ''}${secs}`;
+        timerEl.style.display = 'block';
+      } else {
+        // Ми НЕ в кулдауні
+        timerEl.style.display = 'none';
+        const percent = (userData.energy / MAX_ENERGY) * 100;
+        fillEl.style.width = `${percent}%`;
+        textEl.innerText = Math.floor(userData.energy);
+        
+        // Змінюємо колір якщо енергії мало
+        if (percent < 20) fillEl.style.background = '#ff5252';
+        else fillEl.style.background = 'linear-gradient(90deg, #ff9800, #ffeb3b)';
+      }
+    }
+
+    // Відновлення енергії кожну секунду
+    setInterval(() => {
+      const now = Date.now();
+      if (now > userData.cooldownUntil) {
+        if (userData.energy < MAX_ENERGY) {
+          userData.energy = Math.min(MAX_ENERGY, userData.energy + 15); // Відновлюємо 15 енергії в секунду
+          updateEnergyUI();
+        }
+      } else {
+        updateEnergyUI(); // Щоб оновлювався таймер
+      }
+    }, 1000);
 
     // --- АВТОРИЗАЦІЯ ТА ФОТО ---
     function handleFileUpload(event, source) {
@@ -399,6 +463,7 @@
       const nick = document.getElementById('reg-nickname').value.trim();
       if (nick.length < 2) { showNotification('Нікнейм від 2 символів!', 'error'); return; }
       userData.username = nick; userData.avatarType = tempRegAvatarType; userData.avatarData = tempRegAvatarData;
+      userData.energy = MAX_ENERGY; userData.cooldownUntil = 0;
       saveProgress(); document.getElementById('auth-screen').style.display = 'none'; startGameUI();
       playSound(sfxSuccess);
     }
@@ -428,19 +493,10 @@
       const el = document.getElementById("notification");
       el.innerText = text; 
       
-      if(type === 'error') {
-        el.className = 'notif-error';
-        playSound(sfxError);
-      } else if(type === 'admin') {
-        el.className = 'notif-admin';
-        playSound(sfxSuccess);
-      } else if(type === 'rebirth') {
-        el.className = 'notif-rebirth';
-        playSound(sfxSuccess);
-      } else {
-        el.className = 'notif-success';
-        playSound(sfxSuccess);
-      }
+      if(type === 'error') { el.className = 'notif-error'; playSound(sfxError); } 
+      else if(type === 'admin') { el.className = 'notif-admin'; playSound(sfxSuccess); } 
+      else if(type === 'rebirth') { el.className = 'notif-rebirth'; playSound(sfxSuccess); } 
+      else { el.className = 'notif-success'; playSound(sfxSuccess); }
       
       el.style.top = '20px'; setTimeout(() => { el.style.top = '-100px'; }, 2000);
     }
@@ -451,6 +507,8 @@
       userData.ownedColors = ['default'];
       userData.currentSubjectId = 'music';
       userData.currentColorId = 'default';
+      userData.energy = MAX_ENERGY;
+      userData.cooldownUntil = 0;
 
       for(let i = 1; i <= userData.rebirths; i++) {
         if(i < subjectsList.length) userData.ownedSubjects.push(subjectsList[i].id);
@@ -480,7 +538,7 @@
         userData.score = 0; 
         userData.rebirths++;
         calculateRebirthUnlocks(); 
-        updateScoreUI(); updateRebirthUI(); saveProgress(); renderShop();
+        updateScoreUI(); updateRebirthUI(); saveProgress(); renderShop(); updateEnergyUI();
         showNotification('🌟 ПЕРЕРОДЖЕННЯ УСПІШНЕ!', 'rebirth');
       } else {
         showNotification('Не вистачає монет!', 'error');
@@ -500,7 +558,7 @@
 
     function startGameUI() {
       document.getElementById("ui-nickname").innerText = userData.username;
-      updateGlobalAvatar(); checkStreak(); checkAdminStatus(); updateScoreUI(); updateRebirthUI();
+      updateGlobalAvatar(); checkStreak(); checkAdminStatus(); updateScoreUI(); updateRebirthUI(); updateEnergyUI();
       document.getElementById("settings-nickname").value = userData.username;
       renderAvatarPreview('settings-avatar-preview', userData.avatarType, userData.avatarData);
       
@@ -511,6 +569,13 @@
     }
 
     // --- ФУНКЦІЇ АДМІНА ---
+    function adminResetCooldown() {
+      userData.cooldownUntil = 0;
+      userData.energy = MAX_ENERGY;
+      updateEnergyUI(); saveProgress();
+      showNotification('⚡ Енергію повністю відновлено!', 'admin');
+    }
+
     function adminGiveCustomCoins() {
       const val = parseInt(document.getElementById('admin-coin-val').value);
       if (isNaN(val) || val <= 0) { showNotification('Введіть правильну суму!', 'error'); return; }
@@ -539,7 +604,7 @@
       
       if (added > 0) {
          calculateRebirthUnlocks();
-         updateRebirthUI(); saveProgress(); renderShop(); 
+         updateRebirthUI(); saveProgress(); renderShop(); updateEnergyUI();
          showNotification(`ВИДАНО +${added} 🌟`, 'admin');
       } else {
          showNotification('Досягнуто максимум перероджень!', 'error');
@@ -563,10 +628,35 @@
       showNotification(`Код ${name} створено!`, 'admin'); nameInput.value = ''; rewardInput.value = '';
     }
 
-    // ТАП
+    // --- ТАП (З ЕНЕРГІЄЮ) ---
     document.getElementById("tap-zone").addEventListener('click', (e) => {
+      const now = Date.now();
+      
+      // Перевірка кулдауну
+      if (now < userData.cooldownUntil) {
+        const remainingMs = userData.cooldownUntil - now;
+        const mins = Math.ceil(remainingMs / 60000);
+        showNotification(`Відпочинь! Можна буде потапати через ${mins} хв.`, 'error');
+        return;
+      }
+
       const clickPower = 1 + userData.rebirths;
-      userData.score += clickPower; updateScoreUI(); saveProgress();
+
+      // Перевірка чи вистачає енергії
+      if (userData.energy < clickPower) {
+        // ШТРАФ: 15 хвилин кулдауну
+        userData.cooldownUntil = now + COOLDOWN_MS;
+        userData.energy = 0;
+        updateEnergyUI();
+        saveProgress();
+        showNotification(`Енергія вичерпана! Відпочинь 15 хв.`, 'error');
+        return;
+      }
+
+      // Успішний тап
+      userData.energy -= clickPower;
+      userData.score += clickPower; 
+      updateScoreUI(); updateEnergyUI(); saveProgress();
       
       playSound(sfxTap);
       if (navigator.vibrate) navigator.vibrate(50);
