@@ -269,6 +269,20 @@
   </div>
 
   <script>
+    // --- АУДІО (ЗВУКИ) ---
+    // ВАЖЛИВО: Щоб звуки працювали, завантаж ці 4 файли (.mp3) на свій GitHub!
+    const sfxTap = new Audio('tap.mp3');
+    const sfxBuy = new Audio('buy.mp3');
+    const sfxError = new Audio('error.mp3');
+    const sfxSuccess = new Audio('success.mp3');
+    // Робимо клік трохи тихішим
+    sfxTap.volume = 0.4;
+
+    function playSound(audioObj) {
+      audioObj.currentTime = 0; // Скидаємо на початок, щоб можна було клікати швидко
+      audioObj.play().catch(e => { /* Ігноруємо помилки, якщо браузер блокує звук до першого кліку */ });
+    }
+
     // --- ДАНІ ГРАВЦЯ ---
     let userData = {
       username: "", avatarType: "emoji", avatarData: "😎", score: 0,
@@ -309,7 +323,6 @@
       { id: 'rainbow', name: 'Веселковий', price: 250000, bg: 'linear-gradient(45deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #9400d3)', edge: '#4b0082', glow: 'rgba(255, 255, 255, 0.8)' }
     ];
 
-    // Ціни на переродження (12 штук)
     const rebirthCosts = [1000, 5000, 15000, 50000, 150000, 500000, 1000000, 2500000, 5000000, 10000000, 25000000, 50000000];
 
     // --- ФОРМАТУВАННЯ ЧИСЕЛ ---
@@ -379,6 +392,7 @@
     function selectRegAvatar(element, type, data) {
       document.querySelectorAll('#reg-avatars .avatar-option').forEach(el => el.classList.remove('selected'));
       element.classList.add('selected'); tempRegAvatarType = type; tempRegAvatarData = data;
+      playSound(sfxTap);
     }
 
     function registerUser() {
@@ -386,6 +400,7 @@
       if (nick.length < 2) { showNotification('Нікнейм від 2 символів!', 'error'); return; }
       userData.username = nick; userData.avatarType = tempRegAvatarType; userData.avatarData = tempRegAvatarData;
       saveProgress(); document.getElementById('auth-screen').style.display = 'none'; startGameUI();
+      playSound(sfxSuccess);
     }
 
     function saveSettings() {
@@ -412,23 +427,31 @@
     function showNotification(text, type) {
       const el = document.getElementById("notification");
       el.innerText = text; 
-      if(type === 'error') el.className = 'notif-error';
-      else if(type === 'admin') el.className = 'notif-admin';
-      else if(type === 'rebirth') el.className = 'notif-rebirth';
-      else el.className = 'notif-success';
+      
+      if(type === 'error') {
+        el.className = 'notif-error';
+        playSound(sfxError);
+      } else if(type === 'admin') {
+        el.className = 'notif-admin';
+        playSound(sfxSuccess);
+      } else if(type === 'rebirth') {
+        el.className = 'notif-rebirth';
+        playSound(sfxSuccess);
+      } else {
+        el.className = 'notif-success';
+        playSound(sfxSuccess);
+      }
       
       el.style.top = '20px'; setTimeout(() => { el.style.top = '-100px'; }, 2000);
     }
 
     // --- ПЕРЕРОДЖЕННЯ (СКИДАННЯ) ---
     function calculateRebirthUnlocks() {
-      // ПОВНЕ СКИДАННЯ магазину
       userData.ownedSubjects = ['music'];
       userData.ownedColors = ['default'];
       userData.currentSubjectId = 'music';
       userData.currentColorId = 'default';
 
-      // Видача бонусних предметів
       for(let i = 1; i <= userData.rebirths; i++) {
         if(i < subjectsList.length) userData.ownedSubjects.push(subjectsList[i].id);
         if(i < colorsList.length) userData.ownedColors.push(colorsList[i].id);
@@ -454,11 +477,9 @@
       const cost = rebirthCosts[userData.rebirths];
       
       if (userData.score >= cost) {
-        userData.score = 0; // Чесне обнулення грошей
+        userData.score = 0; 
         userData.rebirths++;
-        
-        calculateRebirthUnlocks(); // Скидання і видача бонусів
-        
+        calculateRebirthUnlocks(); 
         updateScoreUI(); updateRebirthUI(); saveProgress(); renderShop();
         showNotification('🌟 ПЕРЕРОДЖЕННЯ УСПІШНЕ!', 'rebirth');
       } else {
@@ -486,6 +507,7 @@
       applyCurrentSkin();
       
       renderShop(); document.getElementById("app").style.display = "flex"; document.getElementById("global-header").style.display = "flex";
+      playSound(sfxSuccess);
     }
 
     // --- ФУНКЦІЇ АДМІНА ---
@@ -545,7 +567,10 @@
     document.getElementById("tap-zone").addEventListener('click', (e) => {
       const clickPower = 1 + userData.rebirths;
       userData.score += clickPower; updateScoreUI(); saveProgress();
+      
+      playSound(sfxTap);
       if (navigator.vibrate) navigator.vibrate(50);
+      
       const p = document.createElement('span'); p.className = 'plus-one'; p.innerText = '+' + clickPower;
       p.style.left = `${e.clientX}px`; p.style.top = `${e.clientY}px`;
       document.body.appendChild(p); setTimeout(() => p.remove(), 2000);
@@ -557,6 +582,7 @@
       document.getElementById(screenId).classList.add('active');
       document.getElementById(navId).classList.add('active');
       document.getElementById("big-score").style.display = screenId === 'game-screen' ? 'block' : 'none';
+      playSound(sfxTap);
     }
 
     // МАГАЗИН
@@ -582,6 +608,7 @@
       if ((isSubj ? userData.ownedSubjects : userData.ownedColors).includes(item.id)) {
         if (isSubj) { userData.currentSubjectId = item.id; } 
         else { userData.currentColorId = item.id; }
+        playSound(sfxTap);
         applyCurrentSkin();
       } else if (userData.score >= item.price) {
         userData.score -= item.price; updateScoreUI(); 
@@ -590,6 +617,8 @@
         document.body.appendChild(minus); setTimeout(() => minus.remove(), 1500);
 
         showNotification('Куплено!', 'success');
+        playSound(sfxBuy);
+        
         if (isSubj) { userData.ownedSubjects.push(item.id); userData.currentSubjectId = item.id; } 
         else { userData.ownedColors.push(item.id); userData.currentColorId = item.id; }
         applyCurrentSkin();
