@@ -1,343 +1,412 @@
 <!DOCTYPE html>
-<html>
+<html lang="uk">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>School Clicker</title>
   <style>
-    /* --- CSS ЗМІННІ ДЛЯ КОЛЬОРІВ МОНЕТИ --- */
     :root {
-      --coin-grad-1: #ffb74d;
-      --coin-grad-2: #f57c00;
+      --coin-grad-1: #ffb74d; --coin-grad-2: #f57c00;
       --coin-bg: linear-gradient(145deg, var(--coin-grad-1), var(--coin-grad-2));
-      --coin-edge: #b26a00;
-      --coin-glow: rgba(255, 152, 0, 0.3);
+      --coin-edge: #b26a00; --coin-glow: rgba(255, 152, 0, 0.3);
     }
 
     body {
       font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
       background: radial-gradient(circle at center, #222 0%, #000 100%);
-      color: white;
-      margin: 0;
-      height: 100vh;
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-      user-select: none; 
-      -webkit-tap-highlight-color: transparent; 
+      color: white; margin: 0; height: 100vh; display: flex; flex-direction: column;
+      overflow: hidden; user-select: none; -webkit-tap-highlight-color: transparent; 
     }
 
-    /* --- ГЛОБАЛЬНИЙ БАЛАНС --- */
+    /* --- ГЛОБАЛЬНИЙ ХЕДЕР --- */
     #global-header {
-      position: absolute;
-      top: 0; left: 0; width: 100%; padding: 15px 0; text-align: center;
-      font-size: 24px; font-weight: bold; z-index: 500;
-      background: linear-gradient(to bottom, rgba(0,0,0,0.8), transparent);
-      display: none; 
-      text-shadow: 0 2px 10px rgba(255, 255, 255, 0.2);
+      position: absolute; top: 0; left: 0; width: 100%; padding: 10px 20px;
+      display: none; justify-content: space-between; align-items: center;
+      box-sizing: border-box; z-index: 500; background: linear-gradient(to bottom, rgba(0,0,0,0.9), transparent);
     }
+    .player-profile { display: flex; align-items: center; gap: 10px; font-weight: bold; font-size: 16px; }
+    
+    /* СТИЛІ АВАТАРКИ (Підтримка картинок) */
+    .avatar-preview-circle {
+      width: 40px; height: 40px; border-radius: 50%; border: 2px solid #ff9800;
+      display: flex; justify-content: center; align-items: center; font-size: 24px;
+      background-color: #222; background-size: cover; background-position: center; overflow: hidden;
+    }
+    
+    .player-balance { font-size: 20px; font-weight: bold; color: #fff; }
     .coin-icon { color: #ffeb3b; margin-right: 5px; }
 
-    /* --- ПОВІДОМЛЕННЯ (НЕОН) --- */
+    /* --- ПОВІДОМЛЕННЯ --- */
     #notification {
       position: fixed; top: -100px; left: 50%; transform: translateX(-50%);
-      padding: 12px 25px; border-radius: 15px; font-weight: bold; font-size: 16px;
-      z-index: 2000; transition: top 0.4s cubic-bezier(0.68, -0.55, 0.27, 1.55);
-      text-align: center; width: max-content; pointer-events: none;
+      padding: 10px 20px; border-radius: 12px; font-weight: bold; font-size: 14px;
+      z-index: 3000; transition: top 0.4s; text-align: center; width: max-content; pointer-events: none;
     }
-    .notif-error { background: #330000; color: #ff5252; border: 2px solid #ff5252; box-shadow: 0 0 15px #ff5252; }
-    .notif-success { background: #003300; color: #69f0ae; border: 2px solid #69f0ae; box-shadow: 0 0 15px #69f0ae; }
-
-    /* Анімація віднімання грошей */
+    .notif-error { background: #330000; color: #ff5252; border: 2px solid #ff5252; box-shadow: 0 0 10px #ff5252; }
+    .notif-success { background: #003300; color: #69f0ae; border: 2px solid #69f0ae; box-shadow: 0 0 10px #69f0ae; }
     .minus-money {
-      position: absolute; top: 40px; left: 50%; transform: translateX(-50%);
-      color: #ff5252; font-size: 20px; font-weight: bold; pointer-events: none;
-      animation: dropDownFade 1.5s ease-out forwards; text-shadow: 0 0 10px #ff5252; z-index: 600;
+      position: absolute; top: 50px; right: 20px; color: #ff5252; font-size: 20px; font-weight: bold;
+      pointer-events: none; animation: dropDownFade 1.5s ease-out forwards; text-shadow: 0 0 10px #ff5252; z-index: 600;
     }
-    @keyframes dropDownFade { 0% { opacity: 1; transform: translate(-50%, 0); } 100% { opacity: 0; transform: translate(-50%, 40px); } }
+    @keyframes dropDownFade { 0% { opacity: 1; transform: translateY(0); } 100% { opacity: 0; transform: translateY(40px); } }
 
-    /* --- ЗАВАНТАЖЕННЯ --- */
-    #loader { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; }
-    .spinner {
-      width: 60px; height: 60px; border: 6px solid rgba(255, 255, 255, 0.1);
-      border-top-color: #ff9800; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 20px;
-    }
+    /* --- ЗАВАНТАЖЕННЯ ТА АВТОРИЗАЦІЯ --- */
+    #loader, #auth-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; position: absolute; top: 0; left: 0; width: 100%; background: #111; z-index: 4000; }
+    #auth-screen { display: none; padding: 20px; box-sizing: border-box; overflow-y: auto; }
+    .spinner { width: 50px; height: 50px; border: 5px solid rgba(255,255,255,0.1); border-top-color: #ff9800; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 20px; }
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    /* --- ДОДАТОК ТА ЕКРАНИ --- */
-    #app { display: none; height: 100vh; width: 100%; flex-direction: column; padding-top: 60px; }
-    .screen { display: none; flex: 1; width: 100%; max-width: 500px; margin: 0 auto; position: relative; }
-    .screen.active { display: flex; flex-direction: column; animation: fadeIn 0.3s ease-in-out; }
+    .auth-title { font-size: 26px; color: #ff9800; margin-bottom: 15px; font-weight: bold; }
+    .auth-input { background: #222; border: 2px solid #555; color: white; padding: 12px; border-radius: 10px; font-size: 16px; outline: none; text-align: center; width: 100%; max-width: 280px; margin-bottom: 15px; }
+    .auth-input:focus { border-color: #ff9800; }
+    
+    .avatars-grid { display: flex; gap: 10px; justify-content: center; margin-bottom: 15px; flex-wrap: wrap; max-width: 280px; }
+    .avatar-option { width: 45px; height: 45px; display: flex; justify-content: center; align-items: center; font-size: 28px; background: #222; border-radius: 50%; cursor: pointer; border: 2px solid transparent; background-size: cover; background-position: center; }
+    .avatar-option.selected { border-color: #69f0ae; box-shadow: 0 0 10px #69f0ae; transform: scale(1.1); }
+    
+    .file-upload-label { background: #333; padding: 10px 15px; border-radius: 10px; font-size: 14px; cursor: pointer; border: 1px dashed #ff9800; color: #ff9800; margin-bottom: 20px; display: block; text-align: center; width: max-content; }
+    input[type="file"] { display: none; }
+
+    .auth-btn { background: linear-gradient(145deg, #69f0ae, #00c853); border: none; padding: 12px 30px; border-radius: 20px; color: #000; font-weight: bold; font-size: 16px; cursor: pointer; box-shadow: 0 5px 15px rgba(0, 200, 83, 0.4); }
+
+    /* --- ОСНОВНІ ЕКРАНИ --- */
+    #app { display: none; height: 100vh; width: 100%; flex-direction: column; padding-top: 60px; box-sizing: border-box; }
+    .screen { display: none; flex: 1; width: 100%; max-width: 500px; margin: 0 auto; position: relative; padding: 10px 15px 100px 15px; overflow-y: auto; box-sizing: border-box;}
+    .screen.active { display: flex; flex-direction: column; animation: fadeIn 0.3s; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-    /* --- ЕКРАН 1: ТАПАЛКА --- */
-    #game-screen { justify-content: center; align-items: center; padding-bottom: 80px; }
-    .score-container { font-size: 64px; font-weight: bold; margin-bottom: 40px; text-shadow: 0 2px 10px rgba(255, 255, 255, 0.3); }
-    .circle-area { position: relative; width: 280px; height: 280px; perspective: 1000px; }
-    .coin {
-      width: 100%; height: 100%; background: var(--coin-bg); border-radius: 50%;
-      position: relative; display: flex; justify-content: center; align-items: center;
-      box-shadow: 0 10px 0 var(--coin-edge), 0 15px 30px rgba(0, 0, 0, 0.5), inset 0 2px 5px rgba(255, 255, 255, 0.5), 0 0 20px var(--coin-glow);
-      transition: transform 0.1s ease, box-shadow 0.1s ease, background 0.3s ease; cursor: pointer;
-    }
-    .coin::after { content: ''; position: absolute; top: 15px; left: 15px; right: 15px; bottom: 15px; border: 4px dashed rgba(255, 255, 255, 0.3); border-radius: 50%; }
-    .coin-text { font-size: 32px; font-weight: 900; color: #111; text-transform: uppercase; letter-spacing: 1px; text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5); z-index: 10; text-align: center; padding: 0 10px; }
-    .coin:active { transform: translateY(5px) rotateX(10deg); box-shadow: 0 5px 0 var(--coin-edge), 0 10px 20px rgba(0, 0, 0, 0.5), inset 0 2px 5px rgba(255, 255, 255, 0.5), 0 0 30px var(--coin-glow); }
-    .plus-one {
-      position: absolute; color: #ffffff; font-size: 40px; font-weight: 900; pointer-events: none;
-      animation: floatUpFadeOut 2s ease-out; opacity: 0; z-index: 100; text-shadow: 0 0 5px #fff, 0 0 10px #fff, 0 0 20px #fff, 0 0 40px #fff; 
-    }
-    @keyframes floatUpFadeOut { 0% { opacity: 0; transform: translate(-50%, -50%) translateY(0) scale(1); } 5% { opacity: 1; transform: translate(-50%, -50%) translateY(-30px) scale(1.3); } 100% { opacity: 0; transform: translate(-50%, -50%) translateY(-300px) scale(1.1); } }
+    /* ТАПАЛКА (Особливий паддінг) */
+    #game-screen { justify-content: center; align-items: center; padding-bottom: 80px; overflow: hidden;}
+    .score-container { font-size: 56px; font-weight: bold; margin-bottom: 30px; text-shadow: 0 2px 10px rgba(255, 255, 255, 0.3); }
+    .circle-area { position: relative; width: 260px; height: 260px; perspective: 1000px; }
+    .coin { width: 100%; height: 100%; background: var(--coin-bg); border-radius: 50%; display: flex; justify-content: center; align-items: center; box-shadow: 0 10px 0 var(--coin-edge), 0 15px 30px rgba(0,0,0,0.5), inset 0 2px 5px rgba(255,255,255,0.5), 0 0 20px var(--coin-glow); transition: 0.1s; cursor: pointer; }
+    .coin::after { content: ''; position: absolute; top: 12px; left: 12px; right: 12px; bottom: 12px; border: 4px dashed rgba(255,255,255,0.3); border-radius: 50%; }
+    .coin-text { font-size: 30px; font-weight: 900; color: #111; text-transform: uppercase; z-index: 10; text-align: center; }
+    .coin:active { transform: translateY(5px) rotateX(10deg); box-shadow: 0 5px 0 var(--coin-edge), 0 10px 20px rgba(0,0,0,0.5); }
+    .plus-one { position: absolute; color: #fff; font-size: 35px; font-weight: 900; pointer-events: none; animation: floatUpFadeOut 2s ease-out; opacity: 0; z-index: 100; text-shadow: 0 0 10px #fff; }
+    @keyframes floatUpFadeOut { 0% { opacity: 0; transform: translate(-50%, -50%) translateY(0); } 5% { opacity: 1; transform: translate(-50%, -50%) translateY(-20px) scale(1.2); } 100% { opacity: 0; transform: translate(-50%, -50%) translateY(-200px); } }
 
-    /* --- ЕКРАН 2: МАГАЗИН (ВИПРАВЛЕНО ВІДСТУП ЗНИЗУ) --- */
-    #skins-screen { padding: 10px 20px 130px 20px; overflow-y: auto; }
-    .skins-header { font-size: 24px; font-weight: bold; margin-bottom: 5px; color: #fff; text-align: center; }
-    .skins-subheader { font-size: 18px; font-weight: bold; color: #aaa; margin: 15px 0 10px 5px; border-bottom: 1px solid #333; padding-bottom: 5px; }
-    .skins-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; width: 100%; }
-    .shop-card { background: #2a2a2a; border-radius: 12px; padding: 12px 8px; text-align: center; border: 2px solid #444; transition: all 0.2s ease; cursor: pointer; position: relative; display: flex; flex-direction: column; align-items: center; gap: 5px; }
+    /* СПІЛЬНІ СТИЛІ ЕКРАНІВ */
+    .screen-header { font-size: 22px; font-weight: bold; margin-bottom: 15px; color: #ff9800; text-align: center; border-bottom: 1px solid #333; padding-bottom: 10px;}
+    .block-title { font-size: 16px; color: #aaa; margin: 10px 0; font-weight: bold;}
+
+    /* МАГАЗИН */
+    .skins-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+    .shop-card { background: #2a2a2a; border-radius: 10px; padding: 10px; text-align: center; border: 2px solid #444; transition: 0.2s; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 5px; }
     .shop-card.owned { border-color: #555; }
-    .shop-card.selected { background: #3d2500; border-color: #ff9800; box-shadow: 0 0 10px rgba(255, 152, 0, 0.2); }
-    .item-name { font-weight: bold; font-size: 14px; }
-    .item-price { font-size: 12px; font-weight: bold; color: #ffeb3b; background: rgba(0,0,0,0.5); padding: 3px 8px; border-radius: 10px; display: flex; align-items: center; gap: 3px; }
-    .item-owned-badge { font-size: 11px; font-weight: bold; color: #69f0ae; background: rgba(0, 51, 0, 0.5); padding: 3px 8px; border-radius: 10px; }
-    .color-preview { width: 20px; height: 20px; border-radius: 50%; box-shadow: 0 2px 4px rgba(0,0,0,0.5); }
+    .shop-card.selected { background: #3d2500; border-color: #ff9800; }
+    .item-name { font-weight: bold; font-size: 13px; }
+    .item-price { font-size: 11px; color: #ffeb3b; background: rgba(0,0,0,0.5); padding: 3px 8px; border-radius: 10px; }
+    .item-owned-badge { font-size: 10px; color: #69f0ae; background: rgba(0,51,0,0.5); padding: 3px 8px; border-radius: 10px; }
+    .color-preview { width: 15px; height: 15px; border-radius: 50%; }
 
-    /* --- ЕКРАН 3: БОНУСИ --- */
-    #bonus-screen { padding: 10px 20px 130px 20px; overflow-y: auto; align-items: center; }
-    .promo-container { background: #2a2a2a; border: 2px solid #444; border-radius: 15px; padding: 25px 20px; margin-top: 30px; width: 90%; display: flex; flex-direction: column; gap: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.5); }
-    .promo-title { font-size: 20px; font-weight: bold; color: #ff9800; text-align: center; margin-bottom: 5px;}
-    .promo-input { background: #111; border: 2px solid #555; color: white; padding: 12px; border-radius: 10px; font-size: 16px; outline: none; text-align: center; transition: border-color 0.3s; }
-    .promo-input:focus { border-color: #ff9800; }
-    .promo-btn { background: linear-gradient(145deg, #ffb74d, #f57c00); border: none; padding: 12px; border-radius: 10px; color: #111; font-weight: bold; font-size: 16px; cursor: pointer; box-shadow: 0 4px 10px rgba(255, 152, 0, 0.3); transition: transform 0.1s; }
-    .promo-btn:active { transform: scale(0.95); }
+    /* БОНУСИ ТА РЕЙТИНГ */
+    .promo-container { background: #222; border: 1px solid #444; border-radius: 10px; padding: 15px; display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px;}
+    .promo-input { background: #111; border: 1px solid #555; color: white; padding: 10px; border-radius: 8px; text-align: center; outline: none;}
+    .promo-btn { background: #ff9800; border: none; padding: 10px; border-radius: 8px; color: #111; font-weight: bold; cursor: pointer; }
+    
+    .leaderboard { background: #222; border-radius: 10px; padding: 10px; }
+    .lb-item { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #333; }
+    .lb-item.is-me { background: rgba(255, 152, 0, 0.2); border-radius: 8px; border: 1px solid #ff9800; }
+    .lb-rank { font-weight: bold; color: #888; width: 30px; }
+    .lb-name { flex: 1; font-weight: bold; }
+    .lb-score { color: #ffeb3b; font-weight: bold; }
 
-    /* --- ЕКРАН 4: ОНОВЛЕННЯ --- */
-    #updates-screen { padding: 10px 20px 130px 20px; overflow-y: auto; }
-    .update-card { background: #222; border-left: 4px solid #ff9800; border-radius: 8px; padding: 15px; margin-top: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.5); }
-    .update-version { font-weight: bold; color: #ff9800; font-size: 18px; margin-bottom: 8px; display: flex; justify-content: space-between; }
-    .update-date { font-size: 12px; color: #888; font-weight: normal; }
-    .update-desc { font-size: 14px; color: #ccc; line-height: 1.5; }
-    .update-desc ul { margin: 5px 0 0 0; padding-left: 20px; }
-    .update-desc li { margin-bottom: 5px; }
+    /* АКТИВ */
+    .task-card { background: #222; border-left: 4px solid #00b0ff; border-radius: 8px; padding: 15px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+    .task-info { display: flex; flex-direction: column; gap: 5px; }
+    .task-name { font-weight: bold; font-size: 15px; }
+    .task-reward { font-size: 12px; color: #ffeb3b; }
+    .task-btn { background: #333; color: #888; border: none; padding: 8px 15px; border-radius: 15px; font-size: 12px; font-weight: bold; }
 
-    /* --- НИЖНЄ МЕНЮ --- */
-    .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; height: 70px; background: #1a1a1a; border-top: 1px solid #333; display: flex; justify-content: space-around; align-items: center; z-index: 1000; box-shadow: 0 -5px 20px rgba(0,0,0,0.5); }
-    .nav-item { display: flex; flex-direction: column; align-items: center; justify-content: center; color: #777; font-size: 11px; font-weight: bold; text-transform: uppercase; width: 20%; height: 100%; cursor: pointer; transition: color 0.2s; }
-    .nav-icon { width: 24px; height: 24px; background-color: #777; border-radius: 5px; margin-bottom: 5px; transition: background-color 0.2s; }
+    /* ОНОВЛЕННЯ */
+    .update-card { background: #222; border-left: 4px solid #ff9800; border-radius: 8px; padding: 12px; margin-bottom: 10px; }
+    .update-version { font-weight: bold; color: #ff9800; margin-bottom: 5px; font-size: 14px;}
+    .update-desc { font-size: 13px; color: #ccc; }
+
+    /* НАЛАШТУВАННЯ */
+    .settings-block { background: #222; border-radius: 10px; padding: 15px; display: flex; flex-direction: column; align-items: center; gap: 15px; }
+
+    /* --- НИЖНЄ МЕНЮ (6 КНОПОК) --- */
+    .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; height: 65px; background: #1a1a1a; border-top: 1px solid #333; display: flex; justify-content: space-between; z-index: 1000; }
+    .nav-item { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #777; font-size: 9px; font-weight: bold; text-transform: uppercase; cursor: pointer; transition: 0.2s; }
+    .nav-icon { width: 20px; height: 20px; background-color: #777; border-radius: 4px; margin-bottom: 4px; transition: 0.2s; display: flex; justify-content: center; align-items: center; font-size: 14px;}
     .nav-item.active { color: #ff9800; }
-    .nav-item.active .nav-icon { background-color: #ff9800; box-shadow: 0 0 10px rgba(255, 152, 0, 0.5); }
-    .nav-item.disabled { opacity: 0.4; cursor: not-allowed; }
-
+    .nav-item.active .nav-icon { background-color: #ff9800; box-shadow: 0 0 10px rgba(255, 152, 0, 0.5); color: #111;}
   </style>
 </head>
 <body>
 
   <div id="notification"></div>
-  <div id="global-header"><span class="coin-icon">💰</span> <span id="global-score">0</span></div>
 
   <div id="loader">
     <div class="spinner"></div>
     <h2 style="color: #ff9800;">Завантаження...</h2>
   </div>
 
-  <div id="app">
-    <div id="game-screen" class="screen active">
-      <div class="score-container" id="big-score">0</div>
-      <div class="circle-area">
-        <div class="coin" id="tap-zone"><span class="coin-text" id="main-coin-text">Музика</span></div>
-      </div>
+  <div id="auth-screen">
+    <div class="auth-title">Твій Профіль</div>
+    <input type="text" id="reg-nickname" class="auth-input" placeholder="Нікнейм (від 2 букв)" maxlength="12">
+    
+    <div class="block-title">Обери аватар або завантаж свій:</div>
+    <div class="avatars-grid" id="reg-avatars">
+      <div class="avatar-option selected" onclick="selectRegAvatar(this, 'emoji', '😎')">😎</div>
+      <div class="avatar-option" onclick="selectRegAvatar(this, 'emoji', '👽')">👽</div>
+      <div class="avatar-option" onclick="selectRegAvatar(this, '🐱')">🐱</div>
+      <div class="avatar-option" onclick="selectRegAvatar(this, 'emoji', '👾')">👾</div>
     </div>
+    
+    <label class="file-upload-label">
+      📷 Завантажити фото
+      <input type="file" accept="image/*" id="reg-file-upload" onchange="handleFileUpload(event, 'reg')">
+    </label>
 
+    <button class="auth-btn" onclick="registerUser()">Почати гру</button>
+  </div>
+
+  <div id="global-header">
+    <div class="player-profile">
+      <div class="avatar-preview-circle" id="ui-avatar"></div>
+      <div id="ui-nickname">Гравець</div>
+    </div>
+    <div class="player-balance"><span class="coin-icon">💰</span><span id="global-score">0</span></div>
+  </div>
+
+  <div id="app">
+    
     <div id="skins-screen" class="screen">
-      <div class="skins-header">Магазин</div>
-      <div class="skins-subheader">Предмети:</div>
+      <div class="screen-header">Магазин</div>
+      <div class="block-title">Предмети:</div>
       <div class="skins-grid" id="subjects-container"></div>
-      <div class="skins-subheader">Кольори:</div>
+      <div class="block-title">Кольори:</div>
       <div class="skins-grid" id="colors-container"></div>
     </div>
 
-    <div id="bonus-screen" class="screen">
-      <div class="skins-header">Бонуси</div>
-      <div class="promo-container">
-        <div class="promo-title">Активація промокоду</div>
-        <input type="text" id="promo-input" class="promo-input" placeholder="Введіть код сюди...">
-        <button class="promo-btn" onclick="applyPromoCode()">Застосувати</button>
+    <div id="active-screen" class="screen">
+      <div class="screen-header">Активність</div>
+      <div class="block-title">Щоденні завдання (Демо):</div>
+      
+      <div class="task-card">
+        <div class="task-info">
+          <div class="task-name">Перший вхід</div>
+          <div class="task-reward">+100 💰</div>
+        </div>
+        <button class="task-btn">Виконано</button>
       </div>
+      
+      <div class="task-card" style="border-color: #555;">
+        <div class="task-info">
+          <div class="task-name">Зробити 1000 тапів</div>
+          <div class="task-reward">+500 💰</div>
+        </div>
+        <button class="task-btn" style="background: transparent; border: 1px solid #555;">0 / 1000</button>
+      </div>
+
+      <div class="task-card" style="border-color: #555;">
+        <div class="task-info">
+          <div class="task-name">Купити предмет</div>
+          <div class="task-reward">+200 💰</div>
+        </div>
+        <button class="task-btn" style="background: transparent; border: 1px solid #555;">0 / 1</button>
+      </div>
+    </div>
+
+    <div id="game-screen" class="screen active">
+      <div class="score-container" id="big-score">0</div>
+      <div class="circle-area"><div class="coin" id="tap-zone"><span class="coin-text" id="main-coin-text">Музика</span></div></div>
     </div>
 
     <div id="updates-screen" class="screen">
-      <div class="skins-header">Історія оновлень</div>
-      
+      <div class="screen-header">Оновлення</div>
       <div class="update-card" style="border-color: #69f0ae;">
-        <div class="update-version"><span style="color: #69f0ae;">v1.5 - Актуальне</span> <span class="update-date">Зараз</span></div>
-        <div class="update-desc">
-          <ul>
-            <li>Виправлено баг з прокруткою в магазині (тепер видно всі ціни).</li>
-            <li>Додано розділ "Оновлення" з історією розвитку гри.</li>
-          </ul>
-        </div>
+        <div class="update-version"><span style="color:#69f0ae;">v1.7 - Усі фічі!</span></div>
+        <div class="update-desc">Додано Актив, Рейтинг, Налаштування та завантаження СВОГО ФОТО на аватар! 🚀</div>
       </div>
+      <div class="update-card"><div class="update-version">v1.6 - Збереження</div><div class="update-desc">Автозбереження прогресу та профіль.</div></div>
+      <div class="update-card"><div class="update-version">v1.5 - Фікси</div><div class="update-desc">Виправлено дизайн магазину.</div></div>
+    </div>
 
-      <div class="update-card">
-        <div class="update-version">v1.4 - Бонуси <span class="update-date">Раніше</span></div>
-        <div class="update-desc">
-          <ul>
-            <li>Додано розділ "Бали" (Бонуси).</li>
-            <li>Реалізована система секретних промокодів.</li>
-          </ul>
-        </div>
+    <div id="bonus-screen" class="screen">
+      <div class="screen-header">Бонуси & Рейтинг</div>
+      <div class="promo-container">
+        <div style="font-weight:bold; color:#ff9800; text-align:center;">Промокод</div>
+        <input type="text" id="promo-input" class="promo-input" placeholder="Код...">
+        <button class="promo-btn" onclick="applyPromoCode()">Активувати</button>
       </div>
-
-      <div class="update-card">
-        <div class="update-version">v1.3 - Економіка <span class="update-date">Раніше</span></div>
-        <div class="update-desc">
-          <ul>
-            <li>Глобальний лічильник монет на всіх екранах.</li>
-            <li>Предметам та кольорам призначено ціни.</li>
-            <li>Додані неонові сповіщення про покупки та помилки.</li>
-            <li>Анімація витрати монет.</li>
-          </ul>
+      
+      <div class="block-title">Топ Гравців (Глобал):</div>
+      <div class="leaderboard" id="leaderboard-container">
         </div>
-      </div>
+    </div>
 
-      <div class="update-card">
-        <div class="update-version">v1.2 - Магазин <span class="update-date">Раніше</span></div>
-        <div class="update-desc">
-          <ul>
-            <li>Створено нижнє навігаційне меню.</li>
-            <li>Додано магазин зі шкільними предметами.</li>
-            <li>Реалізовано систему зміни кольорів (неон, золото тощо).</li>
-          </ul>
-        </div>
+    <div id="settings-screen" class="screen">
+      <div class="screen-header">Налаштування</div>
+      <div class="settings-block">
+        <div class="avatar-preview-circle" id="settings-avatar-preview" style="width: 80px; height: 80px; font-size: 40px;"></div>
+        
+        <label class="file-upload-label">
+          📷 Змінити фото
+          <input type="file" accept="image/*" onchange="handleFileUpload(event, 'settings')">
+        </label>
+        
+        <input type="text" id="settings-nickname" class="auth-input" placeholder="Новий нікнейм" maxlength="12">
+        <button class="auth-btn" style="padding: 10px 20px; font-size: 14px;" onclick="saveSettings()">Зберегти зміни</button>
       </div>
-
-      <div class="update-card">
-        <div class="update-version">v1.1 - Редизайн <span class="update-date">Раніше</span></div>
-        <div class="update-desc">
-          <ul>
-            <li>Звичайна кнопка замінена на велику 3D-монету.</li>
-            <li>Додана гарна анімація завантаження гри.</li>
-            <li>Реалізована анімація "+1", що вилітає при натисканні.</li>
-          </ul>
-        </div>
-      </div>
-
-      <div class="update-card">
-        <div class="update-version">v1.0 - Старт <span class="update-date">Раніше</span></div>
-        <div class="update-desc">
-          <ul>
-            <li>Створення базового клікера.</li>
-            <li>Успішне підключення до Telegram бота через Python (aiogram).</li>
-          </ul>
-        </div>
-      </div>
-
     </div>
 
     <div class="bottom-nav">
-      <div class="nav-item" id="nav-skins" onclick="switchTab('skins-screen', 'nav-skins')">
-        <div class="nav-icon" style="border-radius: 50%;"></div><span>Магазин</span>
-      </div>
-      <div class="nav-item disabled"><div class="nav-icon"></div><span>Актив</span></div>
-      <div class="nav-item active" id="nav-game" onclick="switchTab('game-screen', 'nav-game')">
-        <div class="nav-icon" style="border-radius: 50%; background: radial-gradient(#ffb74d, #f57c00);"></div><span>Тапалка</span>
-      </div>
-      <div class="nav-item" id="nav-updates" onclick="switchTab('updates-screen', 'nav-updates')">
-        <div class="nav-icon" style="border-radius: 50% 0 50% 0;"></div><span>Онови</span>
-      </div>
-      <div class="nav-item" id="nav-bonus" onclick="switchTab('bonus-screen', 'nav-bonus')">
-        <div class="nav-icon" style="clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);"></div><span>Бали</span>
-      </div>
+      <div class="nav-item" id="nav-skins" onclick="switchTab('skins-screen', 'nav-skins')"><div class="nav-icon" style="border-radius:50%;"></div><span>Магазин</span></div>
+      <div class="nav-item" id="nav-active" onclick="switchTab('active-screen', 'nav-active')"><div class="nav-icon" style="clip-path: polygon(50% 0%, 100% 100%, 0% 100%);"></div><span>Актив</span></div>
+      <div class="nav-item active" id="nav-game" onclick="switchTab('game-screen', 'nav-game')"><div class="nav-icon" style="border-radius:50%; background: radial-gradient(#ffb74d, #f57c00);"></div><span>Тап</span></div>
+      <div class="nav-item" id="nav-updates" onclick="switchTab('updates-screen', 'nav-updates')"><div class="nav-icon" style="border-radius: 50% 0 50% 0;"></div><span>Онови</span></div>
+      <div class="nav-item" id="nav-bonus" onclick="switchTab('bonus-screen', 'nav-bonus')"><div class="nav-icon" style="clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);"></div><span>Бали</span></div>
+      <div class="nav-item" id="nav-settings" onclick="switchTab('settings-screen', 'nav-settings')"><div class="nav-icon" style="border-radius: 30%;">⚙️</div><span>Налашт.</span></div>
     </div>
   </div>
 
   <script>
     // --- ДАНІ ГРАВЦЯ ---
-    let score = 0;
-    let ownedSubjects = ['music'];
-    let ownedColors = ['default'];
-    let currentSubjectId = 'music';
-    let currentColorId = 'default';
-    let usedPromoCodes = [];
+    let userData = {
+      username: "", avatarType: "emoji", avatarData: "😎", score: 0,
+      ownedSubjects: ['music'], ownedColors: ['default'],
+      currentSubjectId: 'music', currentColorId: 'default', usedPromoCodes: []
+    };
+
+    let tempRegAvatarType = "emoji";
+    let tempRegAvatarData = "😎";
 
     // --- БАЗА ТОВАРІВ ---
     const subjectsList = [
-      { id: 'music', name: "Музика", price: 0 },
-      { id: 'art', name: "Малювання", price: 50 },
-      { id: 'tech', name: "Технології", price: 100 },
-      { id: 'physics', name: "Фізика", price: 250 },
-      { id: 'sport', name: "Фізра", price: 500 },
-      { id: 'bio', name: "Біологія", price: 1000 },
-      { id: 'ukr', name: "Укр.мова", price: 1500 },
-      { id: 'ukr_lit', name: "Укр.літ", price: 2000 },
-      { id: 'geo', name: "Географія", price: 3000 },
-      { id: 'geometry', name: "Геометрія", price: 5000 },
-      { id: 'algebra', name: "Алгебра", price: 7500 },
-      { id: 'eng', name: "Англ.мова", price: 10000 },
-      { id: 'it', name: "ІНФОРМАТИКА", price: 20000 }
+      { id: 'music', name: "Музика", price: 0 }, { id: 'art', name: "Малювання", price: 50 },
+      { id: 'tech', name: "Технології", price: 100 }, { id: 'physics', name: "Фізика", price: 250 },
+      { id: 'sport', name: "Фізра", price: 500 }, { id: 'eng', name: "Англ.мова", price: 1000 }
     ];
-
     const colorsList = [
       { id: 'default', name: 'Стандарт', price: 0, bg: 'linear-gradient(145deg, #ffb74d, #f57c00)', edge: '#b26a00', glow: 'rgba(255, 152, 0, 0.3)' },
-      { id: 'neon', name: 'Кібер Неон', price: 200, bg: 'linear-gradient(145deg, #ff00ff, #00ffff)', edge: '#880088', glow: 'rgba(255, 0, 255, 0.5)' },
-      { id: 'epic', name: 'Епічне Золото', price: 500, bg: 'linear-gradient(145deg, #ffd700, #b8860b)', edge: '#8b6508', glow: 'rgba(255, 215, 0, 0.4)' },
-      { id: 'toxic', name: 'Токсичний', price: 1000, bg: 'linear-gradient(145deg, #76ff03, #33691e)', edge: '#1b5e20', glow: 'rgba(118, 255, 3, 0.4)' },
-      { id: 'blood', name: 'Кривавий', price: 2500, bg: 'linear-gradient(145deg, #ff5252, #d50000)', edge: '#b71c1c', glow: 'rgba(213, 0, 0, 0.4)' },
-      { id: 'rainbow', name: 'Веселковий Неон', price: 10000, bg: 'linear-gradient(45deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #9400d3)', edge: '#4b0082', glow: 'rgba(255, 255, 255, 0.8)' }
+      { id: 'neon', name: 'Неон', price: 200, bg: 'linear-gradient(145deg, #ff00ff, #00ffff)', edge: '#880088', glow: 'rgba(255, 0, 255, 0.5)' },
+      { id: 'epic', name: 'Золото', price: 500, bg: 'linear-gradient(145deg, #ffd700, #b8860b)', edge: '#8b6508', glow: 'rgba(255, 215, 0, 0.4)' }
     ];
 
-    // --- ЕЛЕМЕНТИ ІНТЕРФЕЙСУ ---
-    const bigScoreElement = document.getElementById("big-score");
-    const globalScoreElement = document.getElementById("global-score");
-    const tapZone = document.getElementById("tap-zone");
-    const mainCoinText = document.getElementById("main-coin-text");
-    const notifElement = document.getElementById("notification");
-
-    function updateScoreUI() {
-      bigScoreElement.innerText = score;
-      globalScoreElement.innerText = score;
+    // --- СИСТЕМА ЗБЕРЕЖЕННЯ ---
+    function saveProgress() { localStorage.setItem('schoolClickerSave', JSON.stringify(userData)); }
+    function loadProgress() {
+      const saved = localStorage.getItem('schoolClickerSave');
+      if (saved) { userData = { ...userData, ...JSON.parse(saved) }; return true; }
+      return false;
     }
 
-    function showNotification(text, type) {
-      notifElement.innerText = text;
-      notifElement.className = type === 'error' ? 'notif-error' : 'notif-success';
-      notifElement.style.top = '20px';
-      setTimeout(() => { notifElement.style.top = '-100px'; }, 2000);
-    }
-
-    function animateDeduction(amount) {
-      const minus = document.createElement('div');
-      minus.classList.add('minus-money');
-      minus.innerText = `-${amount}`;
-      document.body.appendChild(minus);
-      setTimeout(() => minus.remove(), 1500);
-    }
-
-    function applyPromoCode() {
-      const inputElement = document.getElementById('promo-input');
-      const code = inputElement.value.trim();
-      if (code === '') return;
-
-      if (code === 'OleKon7gcombat') {
-        if (usedPromoCodes.includes(code)) {
-          showNotification('Промокод вже використано!', 'error');
-        } else {
-          score += 100; updateScoreUI(); usedPromoCodes.push(code);
-          showNotification('Промокод активовано! +100', 'success'); inputElement.value = '';
+    // --- ЗАВАНТАЖЕННЯ ФОТО (Base64) ---
+    function handleFileUpload(event, source) {
+      const file = event.target.files[0];
+      if (file) {
+        if(file.size > 2000000) { // Обмеження 2МБ щоб не зламати localStorage
+           showNotification('Фото занадто велике! Максимум 2МБ.', 'error'); return;
         }
-      } else {
-        showNotification('Промокод неправильний!', 'error');
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          const base64Image = e.target.result;
+          if (source === 'reg') {
+            tempRegAvatarType = 'image'; tempRegAvatarData = base64Image;
+            document.querySelectorAll('#reg-avatars .avatar-option').forEach(el => el.classList.remove('selected'));
+            showNotification('Фото завантажено!', 'success');
+          } else if (source === 'settings') {
+            userData.avatarType = 'image'; userData.avatarData = base64Image;
+            renderAvatarPreview('settings-avatar-preview', userData.avatarType, userData.avatarData);
+            updateGlobalAvatar(); saveProgress(); showNotification('Аватар змінено!', 'success');
+          }
+        };
+        reader.readAsDataURL(file);
       }
     }
 
-    tapZone.addEventListener('click', (event) => {
-      score++; updateScoreUI();
+    // --- АВТОРИЗАЦІЯ ---
+    function selectRegAvatar(element, type, data) {
+      document.querySelectorAll('#reg-avatars .avatar-option').forEach(el => el.classList.remove('selected'));
+      element.classList.add('selected'); tempRegAvatarType = type; tempRegAvatarData = data;
+    }
+
+    function registerUser() {
+      const nick = document.getElementById('reg-nickname').value.trim();
+      if (nick.length < 2) { showNotification('Нікнейм від 2 символів!', 'error'); return; }
+      userData.username = nick; userData.avatarType = tempRegAvatarType; userData.avatarData = tempRegAvatarData;
+      saveProgress(); document.getElementById('auth-screen').style.display = 'none'; startGameUI();
+    }
+
+    // --- НАЛАШТУВАННЯ ---
+    function saveSettings() {
+      const nick = document.getElementById('settings-nickname').value.trim();
+      if (nick.length >= 2) { userData.username = nick; document.getElementById("ui-nickname").innerText = userData.username; }
+      saveProgress(); showNotification('Збережено!', 'success');
+    }
+
+    // --- ВІДОБРАЖЕННЯ АВАТАРОК ---
+    function renderAvatarPreview(elementId, type, data) {
+      const el = document.getElementById(elementId);
+      if (type === 'image') { el.innerHTML = ''; el.style.backgroundImage = `url(${data})`; } 
+      else { el.style.backgroundImage = 'none'; el.innerHTML = data; }
+    }
+    function updateGlobalAvatar() { renderAvatarPreview('ui-avatar', userData.avatarType, userData.avatarData); }
+
+    // --- ІНТЕРФЕЙС ТА ІГРОВА ЛОГІКА ---
+    function updateScoreUI() {
+      document.getElementById("big-score").innerText = userData.score;
+      document.getElementById("global-score").innerText = userData.score;
+    }
+
+    function showNotification(text, type) {
+      const el = document.getElementById("notification");
+      el.innerText = text; el.className = type === 'error' ? 'notif-error' : 'notif-success';
+      el.style.top = '20px'; setTimeout(() => { el.style.top = '-100px'; }, 2000);
+    }
+
+    // Рейтинг (Фейкові гравці + Ти)
+    function renderLeaderboard() {
+      const bots = [
+        {name: 'KiberNinja', score: 54320}, {name: 'Oleksii_Pro', score: 21050},
+        {name: 'TapperGod', score: 8500}, {name: 'Shkolyar', score: 3200}
+      ];
+      const allPlayers = [...bots, {name: userData.username, score: userData.score, isMe: true}];
+      allPlayers.sort((a, b) => b.score - a.score); // Сортуємо від більшого до меншого
+
+      const container = document.getElementById('leaderboard-container');
+      container.innerHTML = '';
+      
+      allPlayers.forEach((p, index) => {
+        const div = document.createElement('div');
+        div.className = `lb-item ${p.isMe ? 'is-me' : ''}`;
+        div.innerHTML = `<span class="lb-rank">#${index + 1}</span><span class="lb-name">${p.name} ${p.isMe?'(Ти)':''}</span><span class="lb-score">${p.score}</span>`;
+        container.appendChild(div);
+      });
+    }
+
+    function startGameUI() {
+      document.getElementById("ui-nickname").innerText = userData.username;
+      updateGlobalAvatar(); updateScoreUI();
+      document.getElementById("settings-nickname").value = userData.username;
+      renderAvatarPreview('settings-avatar-preview', userData.avatarType, userData.avatarData);
+      
+      // Відновлення скіна
+      const subj = subjectsList.find(s => s.id === userData.currentSubjectId);
+      if(subj) document.getElementById("main-coin-text").innerText = subj.name;
+      const col = colorsList.find(c => c.id === userData.currentColorId);
+      if(col) {
+        document.documentElement.style.setProperty('--coin-bg', col.bg);
+        document.documentElement.style.setProperty('--coin-edge', col.edge);
+        document.documentElement.style.setProperty('--coin-glow', col.glow);
+      }
+      
+      renderShop(); renderLeaderboard();
+      document.getElementById("app").style.display = "flex";
+      document.getElementById("global-header").style.display = "flex";
+    }
+
+    // ТАП
+    document.getElementById("tap-zone").addEventListener('click', (e) => {
+      userData.score++; updateScoreUI(); saveProgress();
       if (navigator.vibrate) navigator.vibrate(50);
-      const plusOne = document.createElement('span');
-      plusOne.classList.add('plus-one'); plusOne.innerText = '+1';
-      plusOne.style.left = `${event.clientX}px`; plusOne.style.top = `${event.clientY}px`;
-      document.body.appendChild(plusOne);
-      setTimeout(() => plusOne.remove(), 2000);
+      const p = document.createElement('span'); p.className = 'plus-one'; p.innerText = '+1';
+      p.style.left = `${e.clientX}px`; p.style.top = `${e.clientY}px`;
+      document.body.appendChild(p); setTimeout(() => p.remove(), 2000);
     });
 
     function switchTab(screenId, navId) {
@@ -345,61 +414,57 @@
       document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
       document.getElementById(screenId).classList.add('active');
       document.getElementById(navId).classList.add('active');
-      bigScoreElement.style.display = screenId === 'game-screen' ? 'block' : 'none';
+      document.getElementById("big-score").style.display = screenId === 'game-screen' ? 'block' : 'none';
+      if(screenId === 'bonus-screen') renderLeaderboard(); // Оновлюємо рейтинг при заході
     }
 
+    // МАГАЗИН
     function renderShop() {
-      const subjectsContainer = document.getElementById('subjects-container');
-      const colorsContainer = document.getElementById('colors-container');
-      subjectsContainer.innerHTML = ''; colorsContainer.innerHTML = '';
+      const sCont = document.getElementById('subjects-container'); const cCont = document.getElementById('colors-container');
+      sCont.innerHTML = ''; cCont.innerHTML = '';
 
       subjectsList.forEach(item => {
-        const card = document.createElement('div'); card.classList.add('shop-card');
-        const isOwned = ownedSubjects.includes(item.id); const isSelected = currentSubjectId === item.id;
-        if (isOwned) card.classList.add('owned'); if (isSelected) card.classList.add('selected');
-        let statusHtml = isOwned ? `<div class="item-owned-badge">Куплено</div>` : `<div class="item-price">🪙 ${item.price}</div>`;
-        card.innerHTML = `<span class="item-name">${item.name}</span>${statusHtml}`;
-        card.onclick = () => handlePurchase('subject', item);
-        subjectsContainer.appendChild(card);
+        const card = document.createElement('div'); card.className = `shop-card ${userData.ownedSubjects.includes(item.id) ? 'owned' : ''} ${userData.currentSubjectId === item.id ? 'selected' : ''}`;
+        card.innerHTML = `<span class="item-name">${item.name}</span>${userData.ownedSubjects.includes(item.id) ? '<div class="item-owned-badge">Куплено</div>' : `<div class="item-price">🪙 ${item.price}</div>`}`;
+        card.onclick = () => handlePurchase('subject', item); sCont.appendChild(card);
       });
 
       colorsList.forEach(item => {
-        const card = document.createElement('div'); card.classList.add('shop-card');
-        const isOwned = ownedColors.includes(item.id); const isSelected = currentColorId === item.id;
-        if (isOwned) card.classList.add('owned'); if (isSelected) card.classList.add('selected');
-        let statusHtml = isOwned ? `<div class="item-owned-badge">Куплено</div>` : `<div class="item-price">🪙 ${item.price}</div>`;
-        card.innerHTML = `<div class="color-preview" style="background: ${item.bg}"></div><span class="item-name">${item.name}</span>${statusHtml}`;
-        card.onclick = () => handlePurchase('color', item);
-        colorsContainer.appendChild(card);
+        const card = document.createElement('div'); card.className = `shop-card ${userData.ownedColors.includes(item.id) ? 'owned' : ''} ${userData.currentColorId === item.id ? 'selected' : ''}`;
+        card.innerHTML = `<div class="color-preview" style="background:${item.bg}"></div><span class="item-name">${item.name}</span>${userData.ownedColors.includes(item.id) ? '<div class="item-owned-badge">Куплено</div>' : `<div class="item-price">🪙 ${item.price}</div>`}`;
+        card.onclick = () => handlePurchase('color', item); cCont.appendChild(card);
       });
     }
 
     function handlePurchase(type, item) {
-      const isSubject = type === 'subject';
-      const isOwned = isSubject ? ownedSubjects.includes(item.id) : ownedColors.includes(item.id);
-      if (isOwned) {
-        if (isSubject) { currentSubjectId = item.id; mainCoinText.innerText = item.name; } 
-        else { currentColorId = item.id; document.documentElement.style.setProperty('--coin-bg', item.bg); document.documentElement.style.setProperty('--coin-edge', item.edge); document.documentElement.style.setProperty('--coin-glow', item.glow); }
-        renderShop(); return;
-      }
-      if (score >= item.price) {
-        score -= item.price; updateScoreUI(); animateDeduction(item.price);
-        showNotification('Успішно куплено: ' + item.name, 'success');
-        if (isSubject) { ownedSubjects.push(item.id); currentSubjectId = item.id; mainCoinText.innerText = item.name; } 
-        else { ownedColors.push(item.id); currentColorId = item.id; document.documentElement.style.setProperty('--coin-bg', item.bg); document.documentElement.style.setProperty('--coin-edge', item.edge); document.documentElement.style.setProperty('--coin-glow', item.glow); }
-        renderShop();
-      } else { showNotification('Вам не вистачає монет!', 'error'); }
+      const isSubj = type === 'subject';
+      if ((isSubj ? userData.ownedSubjects : userData.ownedColors).includes(item.id)) {
+        if (isSubj) { userData.currentSubjectId = item.id; document.getElementById("main-coin-text").innerText = item.name; } 
+        else { userData.currentColorId = item.id; document.documentElement.style.setProperty('--coin-bg', item.bg); document.documentElement.style.setProperty('--coin-edge', item.edge); document.documentElement.style.setProperty('--coin-glow', item.glow); }
+      } else if (userData.score >= item.price) {
+        userData.score -= item.price; updateScoreUI(); showNotification('Куплено!', 'success');
+        if (isSubj) { userData.ownedSubjects.push(item.id); userData.currentSubjectId = item.id; document.getElementById("main-coin-text").innerText = item.name; } 
+        else { userData.ownedColors.push(item.id); userData.currentColorId = item.id; document.documentElement.style.setProperty('--coin-bg', item.bg); document.documentElement.style.setProperty('--coin-edge', item.edge); document.documentElement.style.setProperty('--coin-glow', item.glow); }
+      } else { showNotification('Не вистачає монет!', 'error'); return; }
+      saveProgress(); renderShop();
+    }
+
+    // ПРОМОКОДИ
+    function applyPromoCode() {
+      const el = document.getElementById('promo-input'); const code = el.value.trim();
+      if (code === 'OleKon7gcombat') {
+        if (userData.usedPromoCodes.includes(code)) showNotification('Вже використано!', 'error');
+        else { userData.score += 100; userData.usedPromoCodes.push(code); updateScoreUI(); saveProgress(); showNotification('Активовано! +100', 'success'); el.value = ''; }
+      } else if (code !== '') showNotification('Неправильний код!', 'error');
     }
 
     window.onload = function() {
-      renderShop();
-      setTimeout(function() {
+      setTimeout(() => {
         document.getElementById("loader").style.display = "none";
-        document.getElementById("app").style.display = "flex";
-        document.getElementById("global-header").style.display = "block";
-      }, 2000); 
+        if (loadProgress() && userData.username !== "") startGameUI();
+        else document.getElementById("auth-screen").style.display = "flex";
+      }, 1500); 
     };
   </script>
-
 </body>
 </html>
