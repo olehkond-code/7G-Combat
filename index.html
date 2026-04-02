@@ -54,8 +54,9 @@
     .auth-input { background: #222; border: 2px solid #555; color: white; padding: 12px; border-radius: 10px; font-size: 16px; outline: none; text-align: center; width: 100%; max-width: 280px; margin-bottom: 15px; }
     .auth-input:focus { border-color: #ff9800; }
     .avatars-grid { display: flex; gap: 10px; justify-content: center; margin-bottom: 15px; flex-wrap: wrap; max-width: 280px; }
-    .avatar-option { width: 45px; height: 45px; display: flex; justify-content: center; align-items: center; font-size: 28px; background: #222; border-radius: 50%; cursor: pointer; border: 2px solid transparent; background-size: cover; background-position: center; }
+    .avatar-option { width: 45px; height: 45px; display: flex; justify-content: center; align-items: center; font-size: 28px; background: #222; border-radius: 50%; cursor: pointer; border: 2px solid transparent; background-size: cover; background-position: center; transition: 0.2s;}
     .avatar-option.selected { border-color: #69f0ae; box-shadow: 0 0 10px #69f0ae; transform: scale(1.1); }
+    .avatar-option:active { transform: scale(0.9); }
     .file-upload-label { background: #333; padding: 10px 15px; border-radius: 10px; font-size: 14px; cursor: pointer; border: 1px dashed #ff9800; color: #ff9800; margin-bottom: 20px; display: block; text-align: center; width: max-content; }
     input[type="file"] { display: none; }
     .auth-btn { background: linear-gradient(145deg, #69f0ae, #00c853); border: none; padding: 12px 30px; border-radius: 20px; color: #000; font-weight: bold; font-size: 16px; cursor: pointer; box-shadow: 0 5px 15px rgba(0, 200, 83, 0.4); }
@@ -232,10 +233,20 @@
       <div class="screen-header">Налаштування</div>
       <div class="settings-block">
         <div class="avatar-preview-circle" id="settings-avatar-preview" style="width: 80px; height: 80px; font-size: 40px;"></div>
+        
+        <div class="block-title" style="margin-bottom: 5px; color: #ccc;">Обери емодзі:</div>
+        <div class="avatars-grid" id="settings-avatars" style="margin-bottom: 10px;">
+          <div class="avatar-option" onclick="changeSettingsAvatar('emoji', '😎')">😎</div>
+          <div class="avatar-option" onclick="changeSettingsAvatar('emoji', '👽')">👽</div>
+          <div class="avatar-option" onclick="changeSettingsAvatar('emoji', '🐱')">🐱</div>
+          <div class="avatar-option" onclick="changeSettingsAvatar('emoji', '👾')">👾</div>
+        </div>
+
         <label class="file-upload-label">
-          📷 Змінити фото
+          📷 Або завантаж фото
           <input type="file" accept="image/*" onchange="handleFileUpload(event, 'settings')">
         </label>
+        
         <input type="text" id="settings-nickname" class="auth-input" placeholder="Новий нікнейм" maxlength="12">
         <button class="auth-btn" style="padding: 10px 20px; font-size: 14px;" onclick="saveSettings()">Зберегти зміни</button>
       </div>
@@ -304,11 +315,11 @@
       ownedSubjects: ['music'], ownedColors: ['default'],
       currentSubjectId: 'music', currentColorId: 'default', usedPromoCodes: [],
       streak: 1, lastLoginDate: 0, customPromos: {}, rebirths: 0,
-      energy: 10000, cooldownUntil: 0 // Змінні для енергії
+      energy: 10000, cooldownUntil: 0 
     };
 
     const MAX_ENERGY = 10000;
-    const COOLDOWN_MS = 15 * 60 * 1000; // 15 хвилин
+    const COOLDOWN_MS = 15 * 60 * 1000; 
 
     let tempRegAvatarType = "emoji";
     let tempRegAvatarData = "😎";
@@ -396,7 +407,6 @@
       const timerEl = document.getElementById('ui-cooldown-timer');
 
       if (now < userData.cooldownUntil) {
-        // Ми в кулдауні
         userData.energy = 0;
         fillEl.style.width = '0%';
         textEl.innerText = '0';
@@ -407,28 +417,26 @@
         timerEl.innerText = `Відпочинок: ${mins}:${secs < 10 ? '0' : ''}${secs}`;
         timerEl.style.display = 'block';
       } else {
-        // Ми НЕ в кулдауні
         timerEl.style.display = 'none';
         const percent = (userData.energy / MAX_ENERGY) * 100;
         fillEl.style.width = `${percent}%`;
         textEl.innerText = Math.floor(userData.energy);
         
-        // Змінюємо колір якщо енергії мало
         if (percent < 20) fillEl.style.background = '#ff5252';
         else fillEl.style.background = 'linear-gradient(90deg, #ff9800, #ffeb3b)';
       }
     }
 
-    // Відновлення енергії кожну секунду
+    // Відновлення енергії кожну секунду (1 в секунду)
     setInterval(() => {
       const now = Date.now();
       if (now > userData.cooldownUntil) {
         if (userData.energy < MAX_ENERGY) {
-          userData.energy = Math.min(MAX_ENERGY, userData.energy + 15); // Відновлюємо 15 енергії в секунду
+          userData.energy = Math.min(MAX_ENERGY, userData.energy + 1);
           updateEnergyUI();
         }
       } else {
-        updateEnergyUI(); // Щоб оновлювався таймер
+        updateEnergyUI(); 
       }
     }, 1000);
 
@@ -457,6 +465,17 @@
       document.querySelectorAll('#reg-avatars .avatar-option').forEach(el => el.classList.remove('selected'));
       element.classList.add('selected'); tempRegAvatarType = type; tempRegAvatarData = data;
       playSound(sfxTap);
+    }
+    
+    // Нова функція: змінити аватар на емодзі з налаштувань
+    function changeSettingsAvatar(type, data) {
+      userData.avatarType = type;
+      userData.avatarData = data;
+      renderAvatarPreview('settings-avatar-preview', userData.avatarType, userData.avatarData);
+      updateGlobalAvatar();
+      saveProgress();
+      playSound(sfxTap);
+      showNotification('Аватар змінено!', 'success');
     }
 
     function registerUser() {
@@ -632,7 +651,6 @@
     document.getElementById("tap-zone").addEventListener('click', (e) => {
       const now = Date.now();
       
-      // Перевірка кулдауну
       if (now < userData.cooldownUntil) {
         const remainingMs = userData.cooldownUntil - now;
         const mins = Math.ceil(remainingMs / 60000);
@@ -642,9 +660,7 @@
 
       const clickPower = 1 + userData.rebirths;
 
-      // Перевірка чи вистачає енергії
       if (userData.energy < clickPower) {
-        // ШТРАФ: 15 хвилин кулдауну
         userData.cooldownUntil = now + COOLDOWN_MS;
         userData.energy = 0;
         updateEnergyUI();
@@ -653,7 +669,6 @@
         return;
       }
 
-      // Успішний тап
       userData.energy -= clickPower;
       userData.score += clickPower; 
       updateScoreUI(); updateEnergyUI(); saveProgress();
