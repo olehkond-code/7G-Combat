@@ -36,7 +36,6 @@
     .notif-admin { background: #2a0033; color: #d500f9; border: 2px solid #d500f9; box-shadow: 0 0 15px #d500f9; }
     
     .minus-money { position: absolute; top: 50px; right: 20px; color: #ff5252; font-size: 20px; font-weight: bold; pointer-events: none; animation: dropDownFade 1.5s ease-out forwards; text-shadow: 0 0 10px #ff5252; z-index: 600; }
-    .plus-money { position: absolute; top: 50px; right: 20px; color: #69f0ae; font-size: 24px; font-weight: bold; pointer-events: none; animation: dropDownFade 1.5s ease-out forwards; text-shadow: 0 0 10px #69f0ae; z-index: 600; }
     @keyframes dropDownFade { 0% { opacity: 1; transform: translateY(0); } 100% { opacity: 0; transform: translateY(40px); } }
 
     /* --- ЗАВАНТАЖЕННЯ ТА АВТОРИЗАЦІЯ --- */
@@ -109,7 +108,7 @@
     /* АДМІН ПАНЕЛЬ */
     .admin-btn { background: #111; border: 2px solid #d500f9; color: #d500f9; padding: 15px; width: 100%; border-radius: 10px; font-size: 16px; font-weight: bold; margin-bottom: 10px; cursor: pointer; transition: 0.2s; text-shadow: 0 0 5px #d500f9; }
     .admin-btn:active { transform: scale(0.95); background: #d500f9; color: #fff; }
-    .admin-promo-box { background: #222; padding: 15px; border-radius: 10px; margin-bottom: 10px; border: 1px dashed #d500f9; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+    .admin-promo-box { background: #222; padding: 15px; border-radius: 10px; margin-bottom: 15px; border: 1px dashed #d500f9; display: flex; flex-direction: column; align-items: center; gap: 10px; }
 
     /* --- НИЖНЄ МЕНЮ --- */
     .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; height: 65px; background: #1a1a1a; border-top: 1px solid #333; display: flex; justify-content: space-between; z-index: 1000; }
@@ -183,11 +182,11 @@
     <div id="updates-screen" class="screen">
       <div class="screen-header">Оновлення</div>
       <div class="update-card" style="border-color: #d500f9;">
-        <div class="update-version"><span style="color:#d500f9;">v2.1 - Промокоди Адміна</span></div>
-        <div class="update-desc">Додано можливість створювати власні промокоди прямо з адмін-панелі.</div>
+        <div class="update-version"><span style="color:#d500f9;">v2.2 - Кастомна накрутка</span></div>
+        <div class="update-desc">Додано можливість вписувати будь-яку кількість монет та днів активу в адмін-панелі.</div>
       </div>
-      <div class="update-card"><div class="update-version">v2.0 - Адмін Панель</div><div class="update-desc">Додано приховані можливості адміністратора для розробника.</div></div>
-      <div class="update-card"><div class="update-version">v1.9 - Реальний Стрик</div><div class="update-desc">Прибрали фейковий рейтинг. Додали реальний лічильник днів активності.</div></div>
+      <div class="update-card"><div class="update-version">v2.1 - Промокоди Адміна</div><div class="update-desc">Додано можливість створювати власні промокоди.</div></div>
+      <div class="update-card"><div class="update-version">v2.0 - Адмін Панель</div><div class="update-desc">Створена секретна консоль розробника.</div></div>
     </div>
 
     <div id="bonus-screen" class="screen">
@@ -216,12 +215,22 @@
       <div class="screen-header" style="color: #d500f9;">God Mode ⚡</div>
       <div class="block-title" style="text-align:center; color: #fff;">Привіт, Творець!</div>
       
-      <button class="admin-btn" onclick="adminGiveCoins()">💰 Додати +1,000,000 монет</button>
-      <button class="admin-btn" onclick="adminGiveStreak()">🔥 Додати +100 днів активу</button>
+      <div class="admin-promo-box">
+        <div style="color: #d500f9; font-weight: bold; font-size: 14px;">💰 Накрутка монет</div>
+        <input type="number" id="admin-coin-val" class="auth-input" placeholder="Введіть суму..." style="width: 100%; margin-bottom: 5px; padding: 8px;">
+        <button class="admin-btn" onclick="adminGiveCustomCoins()" style="margin-bottom: 0; padding: 10px; font-size: 14px;">Видати монети</button>
+      </div>
+
+      <div class="admin-promo-box">
+        <div style="color: #d500f9; font-weight: bold; font-size: 14px;">🔥 Накрутка активу (днів)</div>
+        <input type="number" id="admin-streak-val" class="auth-input" placeholder="Кількість днів..." style="width: 100%; margin-bottom: 5px; padding: 8px;">
+        <button class="admin-btn" onclick="adminGiveCustomStreak()" style="margin-bottom: 0; padding: 10px; font-size: 14px;">Видати актив</button>
+      </div>
+      
       <button class="admin-btn" onclick="adminUnlockAll()">🔓 Розблокувати весь магазин</button>
       
       <div class="admin-promo-box">
-        <div style="color: #d500f9; font-weight: bold; font-size: 14px;">Створити новий промокод</div>
+        <div style="color: #d500f9; font-weight: bold; font-size: 14px;">🎁 Створити новий промокод</div>
         <input type="text" id="admin-promo-name" class="auth-input" placeholder="Назва коду" style="width: 100%; margin-bottom: 5px; padding: 8px;">
         <input type="number" id="admin-promo-reward" class="auth-input" placeholder="Сума монет" style="width: 100%; margin-bottom: 5px; padding: 8px;">
         <button class="admin-btn" onclick="adminAddPromo()" style="margin-bottom: 0; padding: 10px; font-size: 14px;">➕ Створити код</button>
@@ -246,8 +255,7 @@
       username: "", avatarType: "emoji", avatarData: "😎", score: 0,
       ownedSubjects: ['music'], ownedColors: ['default'],
       currentSubjectId: 'music', currentColorId: 'default', usedPromoCodes: [],
-      streak: 1, lastLoginDate: 0,
-      customPromos: {} // Сюди зберігаються створені тобою промокоди
+      streak: 1, lastLoginDate: 0, customPromos: {}
     };
 
     let tempRegAvatarType = "emoji";
@@ -385,14 +393,28 @@
     }
 
     // --- ФУНКЦІЇ АДМІНА ---
-    function adminGiveCoins() {
-      userData.score += 1000000; updateScoreUI(); saveProgress();
-      showNotification('ВИДАНО +1,000,000 💰', 'admin');
+    function adminGiveCustomCoins() {
+      const val = parseInt(document.getElementById('admin-coin-val').value);
+      if (isNaN(val) || val <= 0) {
+        showNotification('Введіть правильну суму!', 'error'); return;
+      }
+      userData.score += val;
+      updateScoreUI();
+      saveProgress();
+      showNotification(`ВИДАНО +${val} 💰`, 'admin');
+      document.getElementById('admin-coin-val').value = '';
     }
-    
-    function adminGiveStreak() {
-      userData.streak += 100; document.getElementById('ui-streak').innerText = userData.streak; saveProgress();
-      showNotification('ВИДАНО +100 ДНІВ 🔥', 'admin');
+
+    function adminGiveCustomStreak() {
+      const val = parseInt(document.getElementById('admin-streak-val').value);
+      if (isNaN(val) || val <= 0) {
+        showNotification('Введіть правильну кількість!', 'error'); return;
+      }
+      userData.streak += val;
+      document.getElementById('ui-streak').innerText = userData.streak;
+      saveProgress();
+      showNotification(`ВИДАНО +${val} ДНІВ 🔥`, 'admin');
+      document.getElementById('admin-streak-val').value = '';
     }
 
     function adminUnlockAll() {
@@ -401,7 +423,6 @@
       saveProgress(); renderShop(); showNotification('МАГАЗИН РОЗБЛОКОВАНО 🔓', 'admin');
     }
 
-    // СТВОРЕННЯ ПРОМОКОДУ
     function adminAddPromo() {
       const nameInput = document.getElementById('admin-promo-name');
       const rewardInput = document.getElementById('admin-promo-reward');
@@ -466,7 +487,6 @@
       } else if (userData.score >= item.price) {
         userData.score -= item.price; updateScoreUI(); 
         
-        // Анімація віднімання
         const minus = document.createElement('div'); minus.className = 'minus-money'; minus.innerText = `-${item.price}`;
         document.body.appendChild(minus); setTimeout(() => minus.remove(), 1500);
 
@@ -484,7 +504,6 @@
       
       let reward = 0;
       
-      // Перевірка нашого стандартного коду та кастомних
       if (code === 'OleKon7gcombat') {
         reward = 100;
       } else if (userData.customPromos && userData.customPromos[code]) {
