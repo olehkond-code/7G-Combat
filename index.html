@@ -203,12 +203,12 @@
 
     <div id="updates-screen" class="screen">
       <div class="screen-header">Оновлення</div>
-      <div class="update-card" style="border-color: #00e5ff;">
-        <div class="update-version"><span style="color:#00e5ff;">v2.4 - Переродження 🌟</span></div>
-        <div class="update-desc">Додана система перероджень у розділ "Бали". Тепер ви можете збільшувати множник кліку та розблоковувати безкоштовні предмети і кольори.</div>
+      <div class="update-card" style="border-color: #69f0ae;">
+        <div class="update-version"><span style="color:#69f0ae;">v2.5 - Фікс Перероджень</span></div>
+        <div class="update-desc">Виправлено механіку: тепер при переродженні ваші монети чесно скидаються до 0, а магазин очищується. Залишаються лише базові та бонусні розблоковані предмети!</div>
       </div>
-      <div class="update-card"><div class="update-version">v2.3 - Формат чисел</div><div class="update-desc">Великі суми мільйонів та мільярдів тепер красиво скорочуються (1M, 1B).</div></div>
-      <div class="update-card"><div class="update-version">v2.2 - Кастомна накрутка</div><div class="update-desc">Додано можливість вписувати будь-яку кількість монет в адмінці.</div></div>
+      <div class="update-card"><div class="update-version">v2.4 - Переродження 🌟</div><div class="update-desc">Додана система перероджень.</div></div>
+      <div class="update-card"><div class="update-version">v2.3 - Формат чисел</div><div class="update-desc">Великі суми мільйонів та мільярдів красиво скорочуються (1M, 1B).</div></div>
     </div>
 
     <div id="bonus-screen" class="screen">
@@ -216,7 +216,7 @@
       
       <div class="rebirth-container">
         <div class="rebirth-title">🌟 ПЕРЕРОДЖЕННЯ</div>
-        <div class="rebirth-info">Скидає прогрес очок, але збільшує силу тапу назавжди! Також розблоковує 1 новий предмет і 1 колір.</div>
+        <div class="rebirth-info">Скидає твої монети та покупки в магазині, але збільшує силу тапу назавжди! Також безкоштовно розблоковує нові предмети і кольори.</div>
         <div class="rebirth-multiplier">Сила тапу: +<span id="ui-click-power">1</span></div>
         <button class="rebirth-btn" id="btn-rebirth" onclick="doRebirth()">Переродитися (🪙 <span id="rebirth-cost-text">1 000</span>)</button>
       </div>
@@ -291,7 +291,7 @@
       ownedSubjects: ['music'], ownedColors: ['default'],
       currentSubjectId: 'music', currentColorId: 'default', usedPromoCodes: [],
       streak: 1, lastLoginDate: 0, customPromos: {},
-      rebirths: 0 // Нова змінна для перероджень
+      rebirths: 0 
     };
 
     let tempRegAvatarType = "emoji";
@@ -317,7 +317,6 @@
       { id: 'rainbow', name: 'Веселковий', price: 10000, bg: 'linear-gradient(45deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #9400d3)', edge: '#4b0082', glow: 'rgba(255, 255, 255, 0.8)' }
     ];
 
-    // Ціни на переродження (всього 12, щоб розблокувати 12 предметів)
     const rebirthCosts = [1000, 5000, 15000, 50000, 150000, 500000, 1000000, 2500000, 5000000, 10000000, 25000000, 50000000];
 
     // --- ФОРМАТУВАННЯ ЧИСЕЛ ---
@@ -334,7 +333,7 @@
       const saved = localStorage.getItem('schoolClickerSave');
       if (saved) { 
         userData = { ...userData, ...JSON.parse(saved) }; 
-        userData.rebirths = userData.rebirths || 0; // Для старих гравців
+        userData.rebirths = userData.rebirths || 0; 
         return true; 
       }
       return false;
@@ -429,6 +428,25 @@
     }
 
     // --- ПЕРЕРОДЖЕННЯ (ЛОГІКА) ---
+    function calculateRebirthUnlocks() {
+      // Скидання магазину до базового рівня
+      userData.ownedSubjects = ['music'];
+      userData.ownedColors = ['default'];
+      userData.currentSubjectId = 'music';
+      userData.currentColorId = 'default';
+
+      // Видача бонусних предметів за переродження
+      for(let i = 1; i <= userData.rebirths; i++) {
+        if(i < subjectsList.length && !userData.ownedSubjects.includes(subjectsList[i].id)) {
+            userData.ownedSubjects.push(subjectsList[i].id);
+        }
+        if(i < colorsList.length && !userData.ownedColors.includes(colorsList[i].id)) {
+            userData.ownedColors.push(colorsList[i].id);
+        }
+      }
+      applyCurrentSkin();
+    }
+
     function updateRebirthUI() {
       document.getElementById('header-rebirth').innerText = userData.rebirths;
       document.getElementById('ui-click-power').innerText = (1 + userData.rebirths);
@@ -447,25 +465,26 @@
       const cost = rebirthCosts[userData.rebirths];
       
       if (userData.score >= cost) {
-        userData.score -= cost;
+        userData.score = 0; // Скидання грошей до нуля!
         userData.rebirths++;
         
-        // Розблоковуємо наступний предмет
-        if (userData.rebirths < subjectsList.length) {
-          const nextSubj = subjectsList[userData.rebirths];
-          if (!userData.ownedSubjects.includes(nextSubj.id)) userData.ownedSubjects.push(nextSubj.id);
-        }
-        
-        // Розблоковуємо наступний колір (якщо є)
-        if (userData.rebirths < colorsList.length) {
-          const nextCol = colorsList[userData.rebirths];
-          if (!userData.ownedColors.includes(nextCol.id)) userData.ownedColors.push(nextCol.id);
-        }
+        calculateRebirthUnlocks(); // Скидання і видача предметів
         
         updateScoreUI(); updateRebirthUI(); saveProgress(); renderShop();
         showNotification('🌟 ПЕРЕРОДЖЕННЯ УСПІШНЕ!', 'rebirth');
       } else {
         showNotification('Не вистачає монет!', 'error');
+      }
+    }
+
+    function applyCurrentSkin() {
+      const subj = subjectsList.find(s => s.id === userData.currentSubjectId);
+      if(subj) document.getElementById("main-coin-text").innerText = subj.name;
+      const col = colorsList.find(c => c.id === userData.currentColorId);
+      if(col) {
+        document.documentElement.style.setProperty('--coin-bg', col.bg);
+        document.documentElement.style.setProperty('--coin-edge', col.edge);
+        document.documentElement.style.setProperty('--coin-glow', col.glow);
       }
     }
 
@@ -475,14 +494,7 @@
       document.getElementById("settings-nickname").value = userData.username;
       renderAvatarPreview('settings-avatar-preview', userData.avatarType, userData.avatarData);
       
-      const subj = subjectsList.find(s => s.id === userData.currentSubjectId);
-      if(subj) document.getElementById("main-coin-text").innerText = subj.name;
-      const col = colorsList.find(c => c.id === userData.currentColorId);
-      if(col) {
-        document.documentElement.style.setProperty('--coin-bg', col.bg);
-        document.documentElement.style.setProperty('--coin-edge', col.edge);
-        document.documentElement.style.setProperty('--coin-glow', col.glow);
-      }
+      applyCurrentSkin();
       
       renderShop(); document.getElementById("app").style.display = "flex"; document.getElementById("global-header").style.display = "flex";
     }
@@ -509,7 +521,8 @@
       for(let i=0; i<val; i++) {
         if(userData.rebirths < rebirthCosts.length) userData.rebirths++;
       }
-      updateRebirthUI(); saveProgress(); showNotification(`ВИДАНО +${val} 🌟`, 'admin');
+      calculateRebirthUnlocks();
+      updateRebirthUI(); saveProgress(); renderShop(); showNotification(`ВИДАНО +${val} 🌟`, 'admin');
       document.getElementById('admin-rebirth-val').value = '';
     }
 
@@ -568,8 +581,9 @@
     function handlePurchase(type, item) {
       const isSubj = type === 'subject';
       if ((isSubj ? userData.ownedSubjects : userData.ownedColors).includes(item.id)) {
-        if (isSubj) { userData.currentSubjectId = item.id; document.getElementById("main-coin-text").innerText = item.name; } 
-        else { userData.currentColorId = item.id; document.documentElement.style.setProperty('--coin-bg', item.bg); document.documentElement.style.setProperty('--coin-edge', item.edge); document.documentElement.style.setProperty('--coin-glow', item.glow); }
+        if (isSubj) { userData.currentSubjectId = item.id; } 
+        else { userData.currentColorId = item.id; }
+        applyCurrentSkin();
       } else if (userData.score >= item.price) {
         userData.score -= item.price; updateScoreUI(); 
         
@@ -577,8 +591,9 @@
         document.body.appendChild(minus); setTimeout(() => minus.remove(), 1500);
 
         showNotification('Куплено!', 'success');
-        if (isSubj) { userData.ownedSubjects.push(item.id); userData.currentSubjectId = item.id; document.getElementById("main-coin-text").innerText = item.name; } 
-        else { userData.ownedColors.push(item.id); userData.currentColorId = item.id; document.documentElement.style.setProperty('--coin-bg', item.bg); document.documentElement.style.setProperty('--coin-edge', item.edge); document.documentElement.style.setProperty('--coin-glow', item.glow); }
+        if (isSubj) { userData.ownedSubjects.push(item.id); userData.currentSubjectId = item.id; } 
+        else { userData.ownedColors.push(item.id); userData.currentColorId = item.id; }
+        applyCurrentSkin();
       } else { showNotification('Не вистачає монет!', 'error'); return; }
       saveProgress(); renderShop();
     }
