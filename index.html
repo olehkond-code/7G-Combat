@@ -33,7 +33,10 @@
     #notification { position: fixed; top: -100px; left: 50%; transform: translateX(-50%); padding: 10px 20px; border-radius: 12px; font-weight: bold; font-size: 14px; z-index: 3000; transition: top 0.4s; text-align: center; width: max-content; pointer-events: none; }
     .notif-error { background: #330000; color: #ff5252; border: 2px solid #ff5252; box-shadow: 0 0 10px #ff5252; }
     .notif-success { background: #003300; color: #69f0ae; border: 2px solid #69f0ae; box-shadow: 0 0 10px #69f0ae; }
+    .notif-admin { background: #2a0033; color: #d500f9; border: 2px solid #d500f9; box-shadow: 0 0 15px #d500f9; }
+    
     .minus-money { position: absolute; top: 50px; right: 20px; color: #ff5252; font-size: 20px; font-weight: bold; pointer-events: none; animation: dropDownFade 1.5s ease-out forwards; text-shadow: 0 0 10px #ff5252; z-index: 600; }
+    .plus-money { position: absolute; top: 50px; right: 20px; color: #69f0ae; font-size: 24px; font-weight: bold; pointer-events: none; animation: dropDownFade 1.5s ease-out forwards; text-shadow: 0 0 10px #69f0ae; z-index: 600; }
     @keyframes dropDownFade { 0% { opacity: 1; transform: translateY(0); } 100% { opacity: 0; transform: translateY(40px); } }
 
     /* --- ЗАВАНТАЖЕННЯ ТА АВТОРИЗАЦІЯ --- */
@@ -103,12 +106,23 @@
     /* НАЛАШТУВАННЯ */
     .settings-block { background: #222; border-radius: 10px; padding: 15px; display: flex; flex-direction: column; align-items: center; gap: 15px; }
 
+    /* АДМІН ПАНЕЛЬ */
+    .admin-btn { background: #111; border: 2px solid #d500f9; color: #d500f9; padding: 15px; width: 100%; border-radius: 10px; font-size: 16px; font-weight: bold; margin-bottom: 10px; cursor: pointer; transition: 0.2s; text-shadow: 0 0 5px #d500f9; }
+    .admin-btn:active { transform: scale(0.95); background: #d500f9; color: #fff; }
+    .admin-promo-box { background: #222; padding: 15px; border-radius: 10px; margin-bottom: 10px; border: 1px dashed #d500f9; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+
     /* --- НИЖНЄ МЕНЮ --- */
     .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; height: 65px; background: #1a1a1a; border-top: 1px solid #333; display: flex; justify-content: space-between; z-index: 1000; }
     .nav-item { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #777; font-size: 9px; font-weight: bold; text-transform: uppercase; cursor: pointer; transition: 0.2s; }
     .nav-icon { width: 20px; height: 20px; background-color: #777; border-radius: 4px; margin-bottom: 4px; transition: 0.2s; display: flex; justify-content: center; align-items: center; font-size: 14px;}
     .nav-item.active { color: #ff9800; }
     .nav-item.active .nav-icon { background-color: #ff9800; box-shadow: 0 0 10px rgba(255, 152, 0, 0.5); color: #111;}
+    
+    /* Спеціальний стиль для адмін-кнопки в меню */
+    #nav-admin { display: none; color: #d500f9; }
+    #nav-admin .nav-icon { background-color: transparent; border: 1px solid #d500f9; color: #d500f9; }
+    #nav-admin.active .nav-icon { background-color: #d500f9; box-shadow: 0 0 10px #d500f9; color: #fff; }
+
   </style>
 </head>
 <body>
@@ -168,12 +182,12 @@
 
     <div id="updates-screen" class="screen">
       <div class="screen-header">Оновлення</div>
-      <div class="update-card" style="border-color: #69f0ae;">
-        <div class="update-version"><span style="color:#69f0ae;">v1.9 - Реальний Стрик</span></div>
-        <div class="update-desc">Прибрали фейковий рейтинг. Додали реальний лічильник днів активності. Повернули ВСІ 13 предметів та 6 кольорів.</div>
+      <div class="update-card" style="border-color: #d500f9;">
+        <div class="update-version"><span style="color:#d500f9;">v2.1 - Промокоди Адміна</span></div>
+        <div class="update-desc">Додано можливість створювати власні промокоди прямо з адмін-панелі.</div>
       </div>
-      <div class="update-card"><div class="update-version">v1.8 - Налаштування</div><div class="update-desc">Додали можливість завантажувати СВОЄ ФОТО на аватар.</div></div>
-      <div class="update-card"><div class="update-version">v1.7 - Збереження</div><div class="update-desc">Повне автозбереження прогресу в пам'ять телефону.</div></div>
+      <div class="update-card"><div class="update-version">v2.0 - Адмін Панель</div><div class="update-desc">Додано приховані можливості адміністратора для розробника.</div></div>
+      <div class="update-card"><div class="update-version">v1.9 - Реальний Стрик</div><div class="update-desc">Прибрали фейковий рейтинг. Додали реальний лічильник днів активності.</div></div>
     </div>
 
     <div id="bonus-screen" class="screen">
@@ -198,13 +212,31 @@
       </div>
     </div>
 
+    <div id="admin-screen" class="screen">
+      <div class="screen-header" style="color: #d500f9;">God Mode ⚡</div>
+      <div class="block-title" style="text-align:center; color: #fff;">Привіт, Творець!</div>
+      
+      <button class="admin-btn" onclick="adminGiveCoins()">💰 Додати +1,000,000 монет</button>
+      <button class="admin-btn" onclick="adminGiveStreak()">🔥 Додати +100 днів активу</button>
+      <button class="admin-btn" onclick="adminUnlockAll()">🔓 Розблокувати весь магазин</button>
+      
+      <div class="admin-promo-box">
+        <div style="color: #d500f9; font-weight: bold; font-size: 14px;">Створити новий промокод</div>
+        <input type="text" id="admin-promo-name" class="auth-input" placeholder="Назва коду" style="width: 100%; margin-bottom: 5px; padding: 8px;">
+        <input type="number" id="admin-promo-reward" class="auth-input" placeholder="Сума монет" style="width: 100%; margin-bottom: 5px; padding: 8px;">
+        <button class="admin-btn" onclick="adminAddPromo()" style="margin-bottom: 0; padding: 10px; font-size: 14px;">➕ Створити код</button>
+      </div>
+
+    </div>
+
     <div class="bottom-nav">
-      <div class="nav-item" id="nav-skins" onclick="switchTab('skins-screen', 'nav-skins')"><div class="nav-icon" style="border-radius:50%;"></div><span>Магазин</span></div>
+      <div class="nav-item" id="nav-skins" onclick="switchTab('skins-screen', 'nav-skins')"><div class="nav-icon" style="border-radius:50%;"></div><span>Шоп</span></div>
       <div class="nav-item" id="nav-active" onclick="switchTab('active-screen', 'nav-active')"><div class="nav-icon" style="clip-path: polygon(50% 0%, 100% 100%, 0% 100%);"></div><span>Актив</span></div>
       <div class="nav-item active" id="nav-game" onclick="switchTab('game-screen', 'nav-game')"><div class="nav-icon" style="border-radius:50%; background: radial-gradient(#ffb74d, #f57c00);"></div><span>Тап</span></div>
       <div class="nav-item" id="nav-updates" onclick="switchTab('updates-screen', 'nav-updates')"><div class="nav-icon" style="border-radius: 50% 0 50% 0;"></div><span>Онови</span></div>
       <div class="nav-item" id="nav-bonus" onclick="switchTab('bonus-screen', 'nav-bonus')"><div class="nav-icon" style="clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);"></div><span>Бали</span></div>
       <div class="nav-item" id="nav-settings" onclick="switchTab('settings-screen', 'nav-settings')"><div class="nav-icon" style="border-radius: 30%;">⚙️</div><span>Налашт.</span></div>
+      <div class="nav-item" id="nav-admin" onclick="switchTab('admin-screen', 'nav-admin')"><div class="nav-icon" style="border-radius: 10%;">⚡</div><span>Адмін</span></div>
     </div>
   </div>
 
@@ -214,13 +246,14 @@
       username: "", avatarType: "emoji", avatarData: "😎", score: 0,
       ownedSubjects: ['music'], ownedColors: ['default'],
       currentSubjectId: 'music', currentColorId: 'default', usedPromoCodes: [],
-      streak: 1, lastLoginDate: 0
+      streak: 1, lastLoginDate: 0,
+      customPromos: {} // Сюди зберігаються створені тобою промокоди
     };
 
     let tempRegAvatarType = "emoji";
     let tempRegAvatarData = "😎";
 
-    // --- ПОВНІ СПИСКИ ТОВАРІВ ---
+    // --- БАЗА ТОВАРІВ ---
     const subjectsList = [
       { id: 'music', name: "Музика", price: 0 }, { id: 'art', name: "Малювання", price: 50 },
       { id: 'tech', name: "Технології", price: 100 }, { id: 'physics', name: "Фізика", price: 250 },
@@ -240,7 +273,7 @@
       { id: 'rainbow', name: 'Веселковий', price: 10000, bg: 'linear-gradient(45deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #9400d3)', edge: '#4b0082', glow: 'rgba(255, 255, 255, 0.8)' }
     ];
 
-    // --- СИСТЕМА ЗБЕРЕЖЕННЯ ТА СТРИКІВ ---
+    // --- СИСТЕМА ЗБЕРЕЖЕННЯ ---
     function saveProgress() { localStorage.setItem('schoolClickerSave', JSON.stringify(userData)); }
     function loadProgress() {
       const saved = localStorage.getItem('schoolClickerSave');
@@ -249,42 +282,41 @@
     }
 
     function checkStreak() {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0); // Обнуляємо час до півночі для точного підрахунку днів
-      const todayTime = today.getTime();
-
-      if (!userData.lastLoginDate) {
-        userData.lastLoginDate = todayTime;
-        userData.streak = 1;
-      } else {
+      const today = new Date(); today.setHours(0, 0, 0, 0); const todayTime = today.getTime();
+      if (!userData.lastLoginDate) { userData.lastLoginDate = todayTime; userData.streak = 1; } 
+      else {
         const diffTime = Math.abs(todayTime - userData.lastLoginDate);
         const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)); 
-        
-        if (diffDays === 1) {
-          userData.streak++; // Зайшов на наступний день
-        } else if (diffDays > 1) {
-          userData.streak = 1; // Пропустив день - стрик скидається
-        }
+        if (diffDays === 1) { userData.streak++; } else if (diffDays > 1) { userData.streak = 1; }
         userData.lastLoginDate = todayTime;
       }
-      document.getElementById('ui-streak').innerText = userData.streak;
-      saveProgress();
+      document.getElementById('ui-streak').innerText = userData.streak; saveProgress();
     }
 
-    // --- ЗАВАНТАЖЕННЯ ФОТО (Base64) ---
+    function checkAdminStatus() {
+      if (userData.username === 'Ole_Kon') {
+        document.getElementById('nav-admin').style.display = 'flex';
+      } else {
+        document.getElementById('nav-admin').style.display = 'none';
+        if(document.getElementById('admin-screen').classList.contains('active')){
+            switchTab('game-screen', 'nav-game'); // Викинути з адмінки, якщо змінив ім'я
+        }
+      }
+    }
+
+    // --- АВТОРИЗАЦІЯ ---
     function handleFileUpload(event, source) {
       const file = event.target.files[0];
       if (file) {
         if(file.size > 2000000) { showNotification('Фото занадто велике! Максимум 2МБ.', 'error'); return; }
         const reader = new FileReader();
         reader.onload = function(e) {
-          const base64Image = e.target.result;
           if (source === 'reg') {
-            tempRegAvatarType = 'image'; tempRegAvatarData = base64Image;
+            tempRegAvatarType = 'image'; tempRegAvatarData = e.target.result;
             document.querySelectorAll('#reg-avatars .avatar-option').forEach(el => el.classList.remove('selected'));
             showNotification('Фото завантажено!', 'success');
           } else if (source === 'settings') {
-            userData.avatarType = 'image'; userData.avatarData = base64Image;
+            userData.avatarType = 'image'; userData.avatarData = e.target.result;
             renderAvatarPreview('settings-avatar-preview', userData.avatarType, userData.avatarData);
             updateGlobalAvatar(); saveProgress(); showNotification('Аватар змінено!', 'success');
           }
@@ -293,7 +325,6 @@
       }
     }
 
-    // --- АВТОРИЗАЦІЯ ТА НАЛАШТУВАННЯ ---
     function selectRegAvatar(element, type, data) {
       document.querySelectorAll('#reg-avatars .avatar-option').forEach(el => el.classList.remove('selected'));
       element.classList.add('selected'); tempRegAvatarType = type; tempRegAvatarData = data;
@@ -309,10 +340,10 @@
     function saveSettings() {
       const nick = document.getElementById('settings-nickname').value.trim();
       if (nick.length >= 2) { userData.username = nick; document.getElementById("ui-nickname").innerText = userData.username; }
-      saveProgress(); showNotification('Збережено!', 'success');
+      saveProgress(); checkAdminStatus(); showNotification('Збережено!', 'success');
     }
 
-    // --- ВІДОБРАЖЕННЯ АВАТАРОК ---
+    // --- ІНТЕРФЕЙС ---
     function renderAvatarPreview(elementId, type, data) {
       const el = document.getElementById(elementId);
       if (type === 'image') { el.innerHTML = ''; el.style.backgroundImage = `url(${data})`; } 
@@ -320,7 +351,6 @@
     }
     function updateGlobalAvatar() { renderAvatarPreview('ui-avatar', userData.avatarType, userData.avatarData); }
 
-    // --- ІНТЕРФЕЙС ТА ІГРОВА ЛОГІКА ---
     function updateScoreUI() {
       document.getElementById("big-score").innerText = userData.score;
       document.getElementById("global-score").innerText = userData.score;
@@ -328,13 +358,17 @@
 
     function showNotification(text, type) {
       const el = document.getElementById("notification");
-      el.innerText = text; el.className = type === 'error' ? 'notif-error' : 'notif-success';
+      el.innerText = text; 
+      if(type === 'error') el.className = 'notif-error';
+      else if(type === 'admin') el.className = 'notif-admin';
+      else el.className = 'notif-success';
+      
       el.style.top = '20px'; setTimeout(() => { el.style.top = '-100px'; }, 2000);
     }
 
     function startGameUI() {
       document.getElementById("ui-nickname").innerText = userData.username;
-      updateGlobalAvatar(); updateScoreUI(); checkStreak();
+      updateGlobalAvatar(); updateScoreUI(); checkStreak(); checkAdminStatus();
       document.getElementById("settings-nickname").value = userData.username;
       renderAvatarPreview('settings-avatar-preview', userData.avatarType, userData.avatarData);
       
@@ -347,9 +381,46 @@
         document.documentElement.style.setProperty('--coin-glow', col.glow);
       }
       
-      renderShop(); 
-      document.getElementById("app").style.display = "flex";
-      document.getElementById("global-header").style.display = "flex";
+      renderShop(); document.getElementById("app").style.display = "flex"; document.getElementById("global-header").style.display = "flex";
+    }
+
+    // --- ФУНКЦІЇ АДМІНА ---
+    function adminGiveCoins() {
+      userData.score += 1000000; updateScoreUI(); saveProgress();
+      showNotification('ВИДАНО +1,000,000 💰', 'admin');
+    }
+    
+    function adminGiveStreak() {
+      userData.streak += 100; document.getElementById('ui-streak').innerText = userData.streak; saveProgress();
+      showNotification('ВИДАНО +100 ДНІВ 🔥', 'admin');
+    }
+
+    function adminUnlockAll() {
+      subjectsList.forEach(s => { if(!userData.ownedSubjects.includes(s.id)) userData.ownedSubjects.push(s.id); });
+      colorsList.forEach(c => { if(!userData.ownedColors.includes(c.id)) userData.ownedColors.push(c.id); });
+      saveProgress(); renderShop(); showNotification('МАГАЗИН РОЗБЛОКОВАНО 🔓', 'admin');
+    }
+
+    // СТВОРЕННЯ ПРОМОКОДУ
+    function adminAddPromo() {
+      const nameInput = document.getElementById('admin-promo-name');
+      const rewardInput = document.getElementById('admin-promo-reward');
+      const name = nameInput.value.trim();
+      const reward = parseInt(rewardInput.value.trim());
+
+      if (name.length < 3) {
+        showNotification('Код занадто короткий!', 'error'); return;
+      }
+      if (isNaN(reward) || reward <= 0) {
+        showNotification('Введіть правильну суму!', 'error'); return;
+      }
+
+      if (!userData.customPromos) userData.customPromos = {};
+      userData.customPromos[name] = reward;
+      saveProgress();
+
+      showNotification(`Код ${name} створено!`, 'admin');
+      nameInput.value = ''; rewardInput.value = '';
     }
 
     // ТАП
@@ -393,7 +464,13 @@
         if (isSubj) { userData.currentSubjectId = item.id; document.getElementById("main-coin-text").innerText = item.name; } 
         else { userData.currentColorId = item.id; document.documentElement.style.setProperty('--coin-bg', item.bg); document.documentElement.style.setProperty('--coin-edge', item.edge); document.documentElement.style.setProperty('--coin-glow', item.glow); }
       } else if (userData.score >= item.price) {
-        userData.score -= item.price; updateScoreUI(); showNotification('Куплено!', 'success');
+        userData.score -= item.price; updateScoreUI(); 
+        
+        // Анімація віднімання
+        const minus = document.createElement('div'); minus.className = 'minus-money'; minus.innerText = `-${item.price}`;
+        document.body.appendChild(minus); setTimeout(() => minus.remove(), 1500);
+
+        showNotification('Куплено!', 'success');
         if (isSubj) { userData.ownedSubjects.push(item.id); userData.currentSubjectId = item.id; document.getElementById("main-coin-text").innerText = item.name; } 
         else { userData.ownedColors.push(item.id); userData.currentColorId = item.id; document.documentElement.style.setProperty('--coin-bg', item.bg); document.documentElement.style.setProperty('--coin-edge', item.edge); document.documentElement.style.setProperty('--coin-glow', item.glow); }
       } else { showNotification('Не вистачає монет!', 'error'); return; }
@@ -403,10 +480,31 @@
     // ПРОМОКОДИ
     function applyPromoCode() {
       const el = document.getElementById('promo-input'); const code = el.value.trim();
+      if (code === '') return;
+      
+      let reward = 0;
+      
+      // Перевірка нашого стандартного коду та кастомних
       if (code === 'OleKon7gcombat') {
-        if (userData.usedPromoCodes.includes(code)) showNotification('Вже використано!', 'error');
-        else { userData.score += 100; userData.usedPromoCodes.push(code); updateScoreUI(); saveProgress(); showNotification('Активовано! +100', 'success'); el.value = ''; }
-      } else if (code !== '') showNotification('Неправильний код!', 'error');
+        reward = 100;
+      } else if (userData.customPromos && userData.customPromos[code]) {
+        reward = userData.customPromos[code];
+      }
+
+      if (reward > 0) {
+        if (userData.usedPromoCodes.includes(code)) {
+          showNotification('Вже використано!', 'error');
+        } else {
+          userData.score += reward; 
+          userData.usedPromoCodes.push(code); 
+          updateScoreUI(); 
+          saveProgress(); 
+          showNotification(`Активовано! +${reward}`, 'success'); 
+          el.value = ''; 
+        }
+      } else {
+        showNotification('Неправильний код!', 'error');
+      }
     }
 
     window.onload = function() {
