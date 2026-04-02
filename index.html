@@ -5,6 +5,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>School Clicker</title>
   <style>
+    /* --- CSS ПЕРЕМЕННЫЕ ДЛЯ ЦВЕТОВ МОНЕТЫ --- */
+    :root {
+      --coin-grad-1: #ffb74d;
+      --coin-grad-2: #f57c00;
+      --coin-edge: #b26a00;
+      --coin-glow: rgba(255, 152, 0, 0.3);
+    }
+
     body {
       font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
       background: radial-gradient(circle at center, #222 0%, #000 100%);
@@ -13,7 +21,7 @@
       height: 100vh;
       display: flex;
       flex-direction: column;
-      overflow: hidden; /* Общая прокрутка отключена */
+      overflow: hidden;
       user-select: none; 
       -webkit-tap-highlight-color: transparent; 
     }
@@ -38,9 +46,7 @@
       box-shadow: 0 0 15px rgba(255, 152, 0, 0.5);
     }
 
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
+    @keyframes spin { to { transform: rotate(360deg); } }
 
     /* --- Основной контейнер приложения --- */
     #app {
@@ -50,9 +56,8 @@
       flex-direction: column;
     }
 
-    /* --- Стили для экранов --- */
     .screen {
-      display: none; /* Скрыты по умолчанию */
+      display: none;
       flex: 1;
       width: 100%;
       max-width: 500px;
@@ -75,7 +80,7 @@
     #game-screen {
       justify-content: center;
       align-items: center;
-      padding-bottom: 80px; /* Отступ для нижнего меню */
+      padding-bottom: 80px; 
     }
 
     .score-container {
@@ -92,20 +97,22 @@
       perspective: 1000px;
     }
 
+    /* МОНЕТА ТЕПЕРЬ ИСПОЛЬЗУЕТ ПЕРЕМЕННЫЕ (:root) */
     .coin {
       width: 100%;
       height: 100%;
-      background: linear-gradient(145deg, #ffb74d, #f57c00);
+      background: linear-gradient(145deg, var(--coin-grad-1), var(--coin-grad-2));
       border-radius: 50%;
       position: relative;
       display: flex;
       justify-content: center;
       align-items: center;
       box-shadow: 
-        0 10px 0 #b26a00, 
+        0 10px 0 var(--coin-edge), 
         0 15px 30px rgba(0, 0, 0, 0.5), 
-        inset 0 2px 5px rgba(255, 255, 255, 0.5);
-      transition: transform 0.1s ease, box-shadow 0.1s ease;
+        inset 0 2px 5px rgba(255, 255, 255, 0.5),
+        0 0 20px var(--coin-glow);
+      transition: transform 0.1s ease, box-shadow 0.1s ease, background 0.3s ease;
       cursor: pointer;
     }
 
@@ -132,9 +139,10 @@
     .coin:active {
       transform: translateY(5px) rotateX(10deg);
       box-shadow: 
-        0 5px 0 #b26a00,
+        0 5px 0 var(--coin-edge),
         0 10px 20px rgba(0, 0, 0, 0.5),
-        inset 0 2px 5px rgba(255, 255, 255, 0.5);
+        inset 0 2px 5px rgba(255, 255, 255, 0.5),
+        0 0 30px var(--coin-glow);
     }
 
     .plus-one {
@@ -155,45 +163,66 @@
       100% { opacity: 0; transform: translate(-50%, -50%) translateY(-300px) scale(1.1); }
     }
 
-    /* --- ЭКРАН: СКИНЫ --- */
+    /* --- ЭКРАН: СКИНЫ И ЦВЕТА --- */
     #skins-screen {
       padding: 20px;
-      padding-bottom: 100px; /* Отступ для меню */
-      overflow-y: auto; /* Включаем прокрутку списка скинов */
-      align-items: center;
+      padding-bottom: 100px; 
+      overflow-y: auto; 
     }
 
     .skins-header {
       font-size: 28px;
       font-weight: bold;
-      margin-bottom: 20px;
-      color: #ff9800;
+      margin-bottom: 10px;
+      color: #fff;
+      text-align: center;
+    }
+
+    .skins-subheader {
+      font-size: 20px;
+      font-weight: bold;
+      color: #aaa;
+      margin: 20px 0 10px 5px;
+      border-bottom: 1px solid #333;
+      padding-bottom: 5px;
     }
 
     .skins-grid {
       display: grid;
       grid-template-columns: repeat(2, 1fr);
-      gap: 15px;
+      gap: 12px;
       width: 100%;
     }
 
-    .skin-card {
-      background: #333;
-      border-radius: 15px;
-      padding: 20px 10px;
+    .skin-card, .color-card {
+      background: #2a2a2a;
+      border-radius: 12px;
+      padding: 15px 10px;
       text-align: center;
       font-weight: bold;
-      font-size: 16px;
+      font-size: 15px;
       border: 2px solid #444;
       transition: all 0.2s ease;
       cursor: pointer;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 8px;
     }
 
-    .skin-card.selected {
-      background: #4a2d00;
+    .skin-card.selected, .color-card.selected {
+      background: #3d2500;
       border-color: #ff9800;
-      box-shadow: 0 0 15px rgba(255, 152, 0, 0.3);
+      box-shadow: 0 0 10px rgba(255, 152, 0, 0.2);
       color: #ff9800;
+    }
+
+    /* Кругляшок предпросмотра цвета на кнопках */
+    .color-preview {
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.5);
     }
 
     /* --- НИЖНЕЕ НАВИГАЦИОННОЕ МЕНЮ --- */
@@ -227,7 +256,6 @@
       transition: color 0.2s;
     }
 
-    /* Иконки-заглушки (кружочки) */
     .nav-icon {
       width: 24px;
       height: 24px;
@@ -237,19 +265,12 @@
       transition: background-color 0.2s;
     }
 
-    .nav-item.active {
-      color: #ff9800;
-    }
-
+    .nav-item.active { color: #ff9800; }
     .nav-item.active .nav-icon {
       background-color: #ff9800;
       box-shadow: 0 0 10px rgba(255, 152, 0, 0.5);
     }
-
-    .nav-item.disabled {
-      opacity: 0.4;
-      cursor: not-allowed;
-    }
+    .nav-item.disabled { opacity: 0.4; cursor: not-allowed; }
 
   </style>
 </head>
@@ -275,8 +296,14 @@
     </div>
 
     <div id="skins-screen" class="screen">
-      <div class="skins-header">Вибір предмета</div>
-      <div class="skins-grid" id="skins-container">
+      <div class="skins-header">Кастомізація</div>
+      
+      <div class="skins-subheader">Предмет:</div>
+      <div class="skins-grid" id="subjects-container">
+        </div>
+
+      <div class="skins-subheader">Колір:</div>
+      <div class="skins-grid" id="colors-container">
         </div>
     </div>
 
@@ -320,68 +347,99 @@
       if (event) {
           const x = event.clientX;
           const y = event.clientY;
-
           const plusOne = document.createElement('span');
           plusOne.classList.add('plus-one');
           plusOne.innerText = '+1';
-
           plusOne.style.left = `${x}px`;
           plusOne.style.top = `${y}px`;
-
           document.body.appendChild(plusOne);
-
           setTimeout(() => { plusOne.remove(); }, 2000);
       }
     }
 
     tapZone.addEventListener('click', tap);
 
-    // --- ЛОГИКА МЕНЮ (ПЕРЕКЛЮЧЕНИЕ ЭКРАНОВ) ---
+    // --- ПЕРЕКЛЮЧЕНИЕ ЭКРАНОВ ---
     function switchTab(screenId, navId) {
-      // Скрываем все экраны
       document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
-      // Снимаем подсветку со всех кнопок меню
       document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
       
-      // Показываем нужный экран и подсвечиваем нужную кнопку
       document.getElementById(screenId).classList.add('active');
       document.getElementById(navId).classList.add('active');
     }
 
-    // --- ЛОГИКА СКИНОВ ---
-    const skinsList = [
+    // --- ЛОГИКА ПРЕДМЕТОВ ---
+    const subjectsList = [
       "Музика", "Малювання", "Технології", "Фізика", "Фізра", 
       "Біологія", "Укр.мова", "Укр.літ", "Географія", 
       "Геометрія", "Алгебра", "Англ.мова", "ІНФОРМАТИКА"
     ];
 
-    const skinsContainer = document.getElementById('skins-container');
+    const subjectsContainer = document.getElementById('subjects-container');
     const mainCoinText = document.getElementById('main-coin-text');
-    let currentSkin = "Музика"; // Скин по умолчанию
+    let currentSubject = "Музика";
 
-    // Генерация карточек скинов
-    skinsList.forEach(skinName => {
+    subjectsList.forEach(subjectName => {
       const card = document.createElement('div');
       card.classList.add('skin-card');
-      if (skinName === currentSkin) card.classList.add('selected');
-      card.innerText = skinName;
+      if (subjectName === currentSubject) card.classList.add('selected');
+      card.innerText = subjectName;
 
-      // Обработка клика по скину
       card.onclick = () => {
-        // Убираем рамку со старого скина
         document.querySelectorAll('.skin-card').forEach(el => el.classList.remove('selected'));
-        // Добавляем рамку на нажатый
         card.classList.add('selected');
-        
-        // Меняем текст на главной монете
-        currentSkin = skinName;
-        mainCoinText.innerText = currentSkin;
-
-        // Автоматически возвращаем игрока на экран "Тапалка" (по желанию можно убрать эту строчку)
-        switchTab('game-screen', 'nav-game');
+        currentSubject = subjectName;
+        mainCoinText.innerText = currentSubject;
       };
+      subjectsContainer.appendChild(card);
+    });
 
-      skinsContainer.appendChild(card);
+    // --- ЛОГИКА ЦВЕТОВ ---
+    // Массив с настройками для каждого цвета
+    const colorsList = [
+      { id: 'default', name: 'Стандарт', g1: '#ffb74d', g2: '#f57c00', edge: '#b26a00', glow: 'rgba(255, 152, 0, 0.3)' },
+      { id: 'neon', name: 'Кібер Неон', g1: '#ff00ff', g2: '#00ffff', edge: '#880088', glow: 'rgba(255, 0, 255, 0.5)' },
+      { id: 'epic', name: 'Епічне Золото', g1: '#ffd700', g2: '#b8860b', edge: '#8b6508', glow: 'rgba(255, 215, 0, 0.4)' },
+      { id: 'toxic', name: 'Токсичний', g1: '#76ff03', g2: '#33691e', edge: '#1b5e20', glow: 'rgba(118, 255, 3, 0.4)' },
+      { id: 'ice', name: 'Крижаний', g1: '#84ffff', g2: '#00b0ff', edge: '#0091ea', glow: 'rgba(0, 176, 255, 0.4)' },
+      { id: 'blood', name: 'Кривавий', g1: '#ff5252', g2: '#d50000', edge: '#b71c1c', glow: 'rgba(213, 0, 0, 0.4)' },
+      { id: 'dark', name: 'Хакер', g1: '#424242', g2: '#111111', edge: '#000000', glow: 'rgba(255, 255, 255, 0.1)' },
+      { id: 'bubble', name: 'Бабл-Гам', g1: '#ff80ab', g2: '#f50057', edge: '#c51162', glow: 'rgba(245, 0, 87, 0.4)' }
+    ];
+
+    const colorsContainer = document.getElementById('colors-container');
+    let currentColorId = 'default';
+
+    colorsList.forEach(colorData => {
+      const card = document.createElement('div');
+      card.classList.add('color-card');
+      if (colorData.id === currentColorId) card.classList.add('selected');
+      
+      // Создаем цветной кругляшок для предпросмотра на кнопке
+      const preview = document.createElement('div');
+      preview.classList.add('color-preview');
+      preview.style.background = `linear-gradient(145deg, ${colorData.g1}, ${colorData.g2})`;
+      
+      const nameSpan = document.createElement('span');
+      nameSpan.innerText = colorData.name;
+
+      card.appendChild(preview);
+      card.appendChild(nameSpan);
+
+      // При клике меняем CSS-переменные
+      card.onclick = () => {
+        document.querySelectorAll('.color-card').forEach(el => el.classList.remove('selected'));
+        card.classList.add('selected');
+        currentColorId = colorData.id;
+
+        // Применяем цвета к главной монете через CSS-переменные
+        document.documentElement.style.setProperty('--coin-grad-1', colorData.g1);
+        document.documentElement.style.setProperty('--coin-grad-2', colorData.g2);
+        document.documentElement.style.setProperty('--coin-edge', colorData.edge);
+        document.documentElement.style.setProperty('--coin-glow', colorData.glow);
+      };
+      
+      colorsContainer.appendChild(card);
     });
 
     // --- ЗАГРУЗКА ПРИЛОЖЕНИЯ ---
