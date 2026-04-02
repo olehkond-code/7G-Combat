@@ -19,6 +19,7 @@
       overflow: hidden; /* Чтобы не было прокрутки на телефоне */
       user-select: none; /* Запрещаем выделять текст */
       -webkit-tap-highlight-color: transparent; /* Убираем синее выделение при тапе на Айфоне */
+      position: relative; /* Для позиционирования эффекта +1 */
     }
 
     /* --- Стили экрана загрузки --- */
@@ -68,7 +69,7 @@
       text-shadow: 0 2px 10px rgba(255, 255, 255, 0.3);
     }
 
-    /* Стили для КРУГЛОЙ монеты (как в Хомяке) */
+    /* Стили для КРУГЛОЙ монеты */
     .circle-area {
       position: relative;
       width: 280px;
@@ -116,11 +117,39 @@
 
     /* Эффект нажатия (монета вдавливается) */
     .coin:active {
-      transform: translateY(5px) rotateX(10sdeg); /* Смещаем вниз и немного наклоняем */
+      transform: translateY(5px) rotateX(10deg); /* Смещаем вниз и немного наклоняем */
       box-shadow: 
         0 5px 0 #b26a00, /* Уменьшаем ребро */
         0 10px 20px rgba(0, 0, 0, 0.5),
         inset 0 2px 5px rgba(255, 255, 255, 0.5);
+    }
+
+    /* --- Стили для вылетающего эффекта +1 --- */
+    .plus-one {
+      position: absolute;
+      color: #ff9800; /* Matching orange color */
+      font-size: 24px;
+      font-weight: bold;
+      pointer-events: none; /* Чтобы циферки не мешали новым тапам */
+      animation: floatUpFadeOut 1s ease-out; /* Анимация вылета */
+      opacity: 0;
+      z-index: 100; /* Обеспечиваем отображение поверх всего */
+      text-shadow: 0 1px 5px rgba(0, 0, 0, 0.5);
+    }
+
+    @keyframes floatUpFadeOut {
+      0% {
+        opacity: 0;
+        transform: translate(-50%, -50%) translateY(0) scale(1); /* Start at click center */
+      }
+      10% {
+        opacity: 1;
+        transform: translate(-50%, -50%) translateY(-20px) scale(1.2); /* Small bounce up and get bigger */
+      }
+      100% {
+        opacity: 0;
+        transform: translate(-50%, -50%) translateY(-100px) scale(1); /* Final float up and fade */
+      }
     }
 
   </style>
@@ -154,10 +183,35 @@
       score++;
       scoreElement.innerText = score;
       
-      // Небольшая вибрация при тапе (работает не на всех телефонах)
+      // Вибрация при тапе (если поддерживается)
       if (navigator.vibrate) {
           navigator.vibrate(50);
       }
+
+      // --- ДОБАВЛЕННЫЙ КОД: Создание эффекта +1 ---
+      if (event) {
+          // Получаем координаты клика относительно окна
+          const x = event.clientX;
+          const y = event.clientY;
+
+          // Создаем элемент для +1
+          const plusOne = document.createElement('span');
+          plusOne.classList.add('plus-one');
+          plusOne.innerText = '+1';
+
+          // Позиционируем элемент точно в месте клика
+          plusOne.style.left = `${x}px`;
+          plusOne.style.top = `${y}px`;
+
+          // Добавляем элемент на страницу
+          document.body.appendChild(plusOne);
+
+          // Удаляем элемент через 1 секунду (после завершения анимации)
+          setTimeout(() => {
+              plusOne.remove();
+          }, 1000); // 1000мс = 1с
+      }
+      // --------------------------------------------
     }
 
     // Назначаем обработчик события нажатия
