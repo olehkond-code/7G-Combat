@@ -111,11 +111,6 @@
     .streak-desc { font-size: 13px; color: #888; margin-top: 15px; }
     @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
 
-    /* ОНОВЛЕННЯ */
-    .update-card { background: #222; border-left: 4px solid #ff9800; border-radius: 8px; padding: 12px; margin-bottom: 10px; }
-    .update-version { font-weight: bold; color: #ff9800; margin-bottom: 5px; font-size: 14px;}
-    .update-desc { font-size: 13px; color: #ccc; }
-
     /* НАЛАШТУВАННЯ */
     .settings-block { background: #222; border-radius: 10px; padding: 15px; display: flex; flex-direction: column; align-items: center; gap: 15px; }
 
@@ -201,22 +196,12 @@
       <div class="circle-area"><div class="coin" id="tap-zone"><span class="coin-text" id="main-coin-text">Музика</span></div></div>
     </div>
 
-    <div id="updates-screen" class="screen">
-      <div class="screen-header">Оновлення</div>
-      <div class="update-card" style="border-color: #69f0ae;">
-        <div class="update-version"><span style="color:#69f0ae;">v2.5 - Фікс Перероджень</span></div>
-        <div class="update-desc">Виправлено механіку: тепер при переродженні ваші монети чесно скидаються до 0, а магазин очищується. Залишаються лише базові та бонусні розблоковані предмети!</div>
-      </div>
-      <div class="update-card"><div class="update-version">v2.4 - Переродження 🌟</div><div class="update-desc">Додана система перероджень.</div></div>
-      <div class="update-card"><div class="update-version">v2.3 - Формат чисел</div><div class="update-desc">Великі суми мільйонів та мільярдів красиво скорочуються (1M, 1B).</div></div>
-    </div>
-
     <div id="bonus-screen" class="screen">
       <div class="screen-header">Бонуси & Переродження</div>
       
       <div class="rebirth-container">
         <div class="rebirth-title">🌟 ПЕРЕРОДЖЕННЯ</div>
-        <div class="rebirth-info">Скидає твої монети та покупки в магазині, але збільшує силу тапу назавжди! Також безкоштовно розблоковує нові предмети і кольори.</div>
+        <div class="rebirth-info">Скидає всі твої монети та покупки в магазині, але збільшує силу тапу назавжди! Також безкоштовно розблоковує нові предмети і кольори.</div>
         <div class="rebirth-multiplier">Сила тапу: +<span id="ui-click-power">1</span></div>
         <button class="rebirth-btn" id="btn-rebirth" onclick="doRebirth()">Переродитися (🪙 <span id="rebirth-cost-text">1 000</span>)</button>
       </div>
@@ -277,7 +262,6 @@
       <div class="nav-item" id="nav-skins" onclick="switchTab('skins-screen', 'nav-skins')"><div class="nav-icon" style="border-radius:50%;"></div><span>Шоп</span></div>
       <div class="nav-item" id="nav-active" onclick="switchTab('active-screen', 'nav-active')"><div class="nav-icon" style="clip-path: polygon(50% 0%, 100% 100%, 0% 100%);"></div><span>Актив</span></div>
       <div class="nav-item active" id="nav-game" onclick="switchTab('game-screen', 'nav-game')"><div class="nav-icon" style="border-radius:50%; background: radial-gradient(#ffb74d, #f57c00);"></div><span>Тап</span></div>
-      <div class="nav-item" id="nav-updates" onclick="switchTab('updates-screen', 'nav-updates')"><div class="nav-icon" style="border-radius: 50% 0 50% 0;"></div><span>Онови</span></div>
       <div class="nav-item" id="nav-bonus" onclick="switchTab('bonus-screen', 'nav-bonus')"><div class="nav-icon" style="clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);"></div><span>Бали</span></div>
       <div class="nav-item" id="nav-settings" onclick="switchTab('settings-screen', 'nav-settings')"><div class="nav-icon" style="border-radius: 30%;">⚙️</div><span>Налашт.</span></div>
       <div class="nav-item" id="nav-admin" onclick="switchTab('admin-screen', 'nav-admin')"><div class="nav-icon" style="border-radius: 10%;">⚡</div><span>Адмін</span></div>
@@ -297,7 +281,7 @@
     let tempRegAvatarType = "emoji";
     let tempRegAvatarData = "😎";
 
-    // --- БАЗА ТОВАРІВ ---
+    // --- БАЗА ТОВАРІВ (13 ПРЕДМЕТІВ) ---
     const subjectsList = [
       { id: 'music', name: "Музика", price: 0 }, { id: 'art', name: "Малювання", price: 50 },
       { id: 'tech', name: "Технології", price: 100 }, { id: 'physics', name: "Фізика", price: 250 },
@@ -308,15 +292,24 @@
       { id: 'it', name: "ІНФОРМАТИКА", price: 20000 }
     ];
 
+    // --- БАЗА КОЛЬОРІВ (13 КОЛЬОРІВ) ---
     const colorsList = [
       { id: 'default', name: 'Стандарт', price: 0, bg: 'linear-gradient(145deg, #ffb74d, #f57c00)', edge: '#b26a00', glow: 'rgba(255, 152, 0, 0.3)' },
       { id: 'neon', name: 'Неон', price: 200, bg: 'linear-gradient(145deg, #ff00ff, #00ffff)', edge: '#880088', glow: 'rgba(255, 0, 255, 0.5)' },
       { id: 'epic', name: 'Золото', price: 500, bg: 'linear-gradient(145deg, #ffd700, #b8860b)', edge: '#8b6508', glow: 'rgba(255, 215, 0, 0.4)' },
       { id: 'toxic', name: 'Токсичний', price: 1000, bg: 'linear-gradient(145deg, #76ff03, #33691e)', edge: '#1b5e20', glow: 'rgba(118, 255, 3, 0.4)' },
       { id: 'blood', name: 'Кривавий', price: 2500, bg: 'linear-gradient(145deg, #ff5252, #d50000)', edge: '#b71c1c', glow: 'rgba(213, 0, 0, 0.4)' },
-      { id: 'rainbow', name: 'Веселковий', price: 10000, bg: 'linear-gradient(45deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #9400d3)', edge: '#4b0082', glow: 'rgba(255, 255, 255, 0.8)' }
+      { id: 'magic', name: 'Магічний', price: 5000, bg: 'linear-gradient(145deg, #9c27b0, #673ab7)', edge: '#4a148c', glow: 'rgba(156, 39, 176, 0.4)' },
+      { id: 'fire', name: 'Вогняний', price: 7500, bg: 'linear-gradient(145deg, #ff5722, #dd2c00)', edge: '#bf360c', glow: 'rgba(255, 87, 34, 0.4)' },
+      { id: 'ocean', name: 'Океан', price: 10000, bg: 'linear-gradient(145deg, #00bcd4, #009688)', edge: '#006064', glow: 'rgba(0, 188, 212, 0.4)' },
+      { id: 'space', name: 'Космос', price: 15000, bg: 'linear-gradient(145deg, #311b92, #1a237e)', edge: '#111', glow: 'rgba(49, 27, 146, 0.5)' },
+      { id: 'emerald', name: 'Смарагд', price: 25000, bg: 'linear-gradient(145deg, #4caf50, #1b5e20)', edge: '#1b5e20', glow: 'rgba(76, 175, 80, 0.4)' },
+      { id: 'ghost', name: 'Привид', price: 50000, bg: 'linear-gradient(145deg, #e0e0e0, #9e9e9e)', edge: '#616161', glow: 'rgba(224, 224, 224, 0.4)' },
+      { id: 'diamond', name: 'Діамант', price: 100000, bg: 'linear-gradient(145deg, #e0f7fa, #84ffff)', edge: '#00b8d4', glow: 'rgba(132, 255, 255, 0.5)' },
+      { id: 'rainbow', name: 'Веселковий', price: 250000, bg: 'linear-gradient(45deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #9400d3)', edge: '#4b0082', glow: 'rgba(255, 255, 255, 0.8)' }
     ];
 
+    // Ціни на переродження (12 штук)
     const rebirthCosts = [1000, 5000, 15000, 50000, 150000, 500000, 1000000, 2500000, 5000000, 10000000, 25000000, 50000000];
 
     // --- ФОРМАТУВАННЯ ЧИСЕЛ ---
@@ -427,22 +420,18 @@
       el.style.top = '20px'; setTimeout(() => { el.style.top = '-100px'; }, 2000);
     }
 
-    // --- ПЕРЕРОДЖЕННЯ (ЛОГІКА) ---
+    // --- ПЕРЕРОДЖЕННЯ (СКИДАННЯ) ---
     function calculateRebirthUnlocks() {
-      // Скидання магазину до базового рівня
+      // ПОВНЕ СКИДАННЯ магазину
       userData.ownedSubjects = ['music'];
       userData.ownedColors = ['default'];
       userData.currentSubjectId = 'music';
       userData.currentColorId = 'default';
 
-      // Видача бонусних предметів за переродження
+      // Видача бонусних предметів
       for(let i = 1; i <= userData.rebirths; i++) {
-        if(i < subjectsList.length && !userData.ownedSubjects.includes(subjectsList[i].id)) {
-            userData.ownedSubjects.push(subjectsList[i].id);
-        }
-        if(i < colorsList.length && !userData.ownedColors.includes(colorsList[i].id)) {
-            userData.ownedColors.push(colorsList[i].id);
-        }
+        if(i < subjectsList.length) userData.ownedSubjects.push(subjectsList[i].id);
+        if(i < colorsList.length) userData.ownedColors.push(colorsList[i].id);
       }
       applyCurrentSkin();
     }
@@ -465,10 +454,10 @@
       const cost = rebirthCosts[userData.rebirths];
       
       if (userData.score >= cost) {
-        userData.score = 0; // Скидання грошей до нуля!
+        userData.score = 0; // Чесне обнулення грошей
         userData.rebirths++;
         
-        calculateRebirthUnlocks(); // Скидання і видача предметів
+        calculateRebirthUnlocks(); // Скидання і видача бонусів
         
         updateScoreUI(); updateRebirthUI(); saveProgress(); renderShop();
         showNotification('🌟 ПЕРЕРОДЖЕННЯ УСПІШНЕ!', 'rebirth');
@@ -518,11 +507,21 @@
       const val = parseInt(document.getElementById('admin-rebirth-val').value);
       if (isNaN(val) || val <= 0) { showNotification('Введіть правильну кількість!', 'error'); return; }
       
+      let added = 0;
       for(let i=0; i<val; i++) {
-        if(userData.rebirths < rebirthCosts.length) userData.rebirths++;
+        if(userData.rebirths < rebirthCosts.length) {
+            userData.rebirths++;
+            added++;
+        }
       }
-      calculateRebirthUnlocks();
-      updateRebirthUI(); saveProgress(); renderShop(); showNotification(`ВИДАНО +${val} 🌟`, 'admin');
+      
+      if (added > 0) {
+         calculateRebirthUnlocks();
+         updateRebirthUI(); saveProgress(); renderShop(); 
+         showNotification(`ВИДАНО +${added} 🌟`, 'admin');
+      } else {
+         showNotification('Досягнуто максимум перероджень!', 'error');
+      }
       document.getElementById('admin-rebirth-val').value = '';
     }
 
