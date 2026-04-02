@@ -2,13 +2,13 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Tap Game</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Music Clicker</title>
   <style>
     body {
       text-align: center;
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background: #111;
+      font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      background: radial-gradient(circle at center, #222 0%, #000 100%);
       color: white;
       margin: 0;
       height: 100vh;
@@ -16,6 +16,9 @@
       flex-direction: column;
       justify-content: center;
       align-items: center;
+      overflow: hidden; /* Чтобы не было прокрутки на телефоне */
+      user-select: none; /* Запрещаем выделять текст */
+      -webkit-tap-highlight-color: transparent; /* Убираем синее выделение при тапе на Айфоне */
     }
 
     /* --- Стили экрана загрузки --- */
@@ -25,15 +28,15 @@
       align-items: center;
     }
 
-    /* Крутящееся колечко */
     .spinner {
       width: 60px;
       height: 60px;
       border: 6px solid rgba(255, 255, 255, 0.1);
-      border-top-color: orange;
+      border-top-color: #ff9800; /* Яркий оранжевый */
       border-radius: 50%;
       animation: spin 1s linear infinite;
       margin-bottom: 20px;
+      box-shadow: 0 0 15px rgba(255, 152, 0, 0.5);
     }
 
     @keyframes spin {
@@ -42,8 +45,10 @@
 
     /* --- Стили самой игры --- */
     #game {
-      display: none; /* Скрываем игру при старте */
-      animation: fadeIn 1s; /* Плавное появление */
+      display: none;
+      animation: fadeIn 0.5s;
+      width: 100%;
+      max-width: 400px; /* Ограничим ширину для больших экранов */
     }
 
     @keyframes fadeIn {
@@ -51,56 +56,120 @@
       to { opacity: 1; }
     }
 
-    h1 {
-      font-size: 40px;
-      margin-bottom: 40px;
+    /* Стили для счетчика очков */
+    .score-container {
+      font-size: 48px;
+      font-weight: bold;
+      margin-bottom: 30px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 10px;
+      text-shadow: 0 2px 10px rgba(255, 255, 255, 0.3);
     }
 
-    button {
-      font-size: 30px;
-      padding: 20px 50px;
-      border-radius: 20px;
-      background: orange;
-      border: none;
-      color: #111;
-      font-weight: bold;
+    /* Стили для КРУГЛОЙ монеты (как в Хомяке) */
+    .circle-area {
+      position: relative;
+      width: 280px;
+      height: 280px;
+      margin: 0 auto;
+      perspective: 1000px; /* Для 3D эффекта при нажатии */
+    }
+
+    .coin {
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(145deg, #ffb74d, #f57c00); /* Оранжевый градиент */
+      border-radius: 50%;
+      position: relative;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      box-shadow: 
+        0 10px 0 #b26a00, /* Глубина монеты (ребро) */
+        0 15px 30px rgba(0, 0, 0, 0.5), /* Тень снизу */
+        inset 0 2px 5px rgba(255, 255, 255, 0.5); /* Блик сверху */
+      transition: transform 0.1s ease, box-shadow 0.1s ease;
       cursor: pointer;
-      box-shadow: 0 5px 15px rgba(255, 165, 0, 0.4);
     }
-    
-    /* Эффект нажатия на кнопку */
-    button:active {
-      transform: scale(0.95);
-      box-shadow: 0 2px 10px rgba(255, 165, 0, 0.4);
+
+    /* Внутренний ободок монеты */
+    .coin::after {
+      content: '';
+      position: absolute;
+      top: 15px; left: 15px; right: 15px; bottom: 15px;
+      border: 4px dashed rgba(255, 255, 255, 0.3);
+      border-radius: 50%;
     }
+
+    /* Текст внутри монеты */
+    .coin-text {
+      font-size: 36px;
+      font-weight: 900;
+      color: #111; /* Темный цвет текста для контраста */
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5);
+      z-index: 10; /* Чтобы быть поверх ободка */
+    }
+
+    /* Эффект нажатия (монета вдавливается) */
+    .coin:active {
+      transform: translateY(5px) rotateX(10sdeg); /* Смещаем вниз и немного наклоняем */
+      box-shadow: 
+        0 5px 0 #b26a00, /* Уменьшаем ребро */
+        0 10px 20px rgba(0, 0, 0, 0.5),
+        inset 0 2px 5px rgba(255, 255, 255, 0.5);
+    }
+
   </style>
 </head>
 <body>
 
   <div id="loader">
     <div class="spinner"></div>
-    <h2>Загрузка...</h2>
+    <h2 style="color: #ff9800;">Загрузка...</h2>
   </div>
 
   <div id="game">
-    <h1>Очки: <span id="score">0</span></h1>
-    <button onclick="tap()">Тапай!</button>
+    <div class="score-container">
+      <span id="score">0</span>
+    </div>
+
+    <div class="circle-area">
+      <div class="coin" id="tap-zone">
+        <span class="coin-text">Музика</span>
+      </div>
+    </div>
   </div>
 
   <script>
     let score = 0;
+    const scoreElement = document.getElementById("score");
+    const tapZone = document.getElementById("tap-zone");
 
-    function tap() {
+    // Функция тапа
+    function tap(event) {
       score++;
-      document.getElementById("score").innerText = score;
+      scoreElement.innerText = score;
+      
+      // Небольшая вибрация при тапе (работает не на всех телефонах)
+      if (navigator.vibrate) {
+          navigator.vibrate(50);
+      }
     }
 
-    // Скрипт для скрытия загрузки через 2.5 секунды (2500 миллисекунд)
+    // Назначаем обработчик события нажатия
+    tapZone.addEventListener('click', tap);
+
+
+    // Скрипт для скрытия загрузки через 2 секунды (2000 мс)
     window.onload = function() {
       setTimeout(function() {
         document.getElementById("loader").style.display = "none";
         document.getElementById("game").style.display = "block";
-      }, 2500);
+      }, 2000); 
     };
   </script>
 
