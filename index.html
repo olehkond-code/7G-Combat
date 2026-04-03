@@ -122,11 +122,6 @@
     .streak-desc { font-size: 13px; color: #888; margin-top: 15px; }
     @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
 
-    /* ОНОВЛЕННЯ */
-    .update-card { background: #222; border-left: 4px solid #ff9800; border-radius: 8px; padding: 12px; margin-bottom: 10px; }
-    .update-version { font-weight: bold; color: #ff9800; margin-bottom: 5px; font-size: 14px;}
-    .update-desc { font-size: 13px; color: #ccc; }
-
     /* НАЛАШТУВАННЯ */
     .settings-block { background: #222; border-radius: 10px; padding: 15px; display: flex; flex-direction: column; align-items: center; gap: 15px; }
     .logout-btn { background: transparent; border: 2px solid #ff5252; color: #ff5252; padding: 10px 20px; border-radius: 10px; font-weight: bold; cursor: pointer; margin-top: 10px; width: 100%; transition: 0.2s;}
@@ -224,15 +219,6 @@
       </div>
     </div>
 
-    <div id="updates-screen" class="screen">
-      <div class="screen-header">Оновлення</div>
-      <div class="update-card" style="border-color: #69f0ae;">
-        <div class="update-version"><span style="color:#69f0ae;">v2.8 - Адмін-Захист</span></div>
-        <div class="update-desc">Створено жорстку прив'язку пароля (26072013) до акаунту творця (Ole_Kon) та заблоковано зміну нікнейму на адмінський у налаштуваннях.</div>
-      </div>
-      <div class="update-card"><div class="update-version">v2.7 - Акаунти та Енергія</div><div class="update-desc">Додано систему локальних акаунтів з паролями. Баланс енергії вирівняно (відновлення 1 од./сек).</div></div>
-    </div>
-
     <div id="bonus-screen" class="screen">
       <div class="screen-header">Бонуси & Переродження</div>
       
@@ -268,8 +254,6 @@
           <input type="file" accept="image/*" onchange="handleFileUpload(event, 'settings')">
         </label>
         
-        <input type="text" id="settings-nickname" class="auth-input" placeholder="Новий нікнейм" maxlength="12">
-        <button class="auth-btn" style="padding: 10px 20px; font-size: 14px;" onclick="saveSettings()">Зберегти зміни</button>
         <button class="logout-btn" onclick="logoutUser()">🚪 Вийти з акаунта</button>
       </div>
     </div>
@@ -312,7 +296,6 @@
       <div class="nav-item" id="nav-skins" onclick="switchTab('skins-screen', 'nav-skins')"><div class="nav-icon" style="border-radius:50%;"></div><span>Шоп</span></div>
       <div class="nav-item" id="nav-active" onclick="switchTab('active-screen', 'nav-active')"><div class="nav-icon" style="clip-path: polygon(50% 0%, 100% 100%, 0% 100%);"></div><span>Актив</span></div>
       <div class="nav-item active" id="nav-game" onclick="switchTab('game-screen', 'nav-game')"><div class="nav-icon" style="border-radius:50%; background: radial-gradient(#ffb74d, #f57c00);"></div><span>Тап</span></div>
-      <div class="nav-item" id="nav-updates" onclick="switchTab('updates-screen', 'nav-updates')"><div class="nav-icon" style="border-radius: 50% 0 50% 0;"></div><span>Онови</span></div>
       <div class="nav-item" id="nav-bonus" onclick="switchTab('bonus-screen', 'nav-bonus')"><div class="nav-icon" style="clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);"></div><span>Бали</span></div>
       <div class="nav-item" id="nav-settings" onclick="switchTab('settings-screen', 'nav-settings')"><div class="nav-icon" style="border-radius: 30%;">⚙️</div><span>Налашт.</span></div>
       <div class="nav-item" id="nav-admin" onclick="switchTab('admin-screen', 'nav-admin')"><div class="nav-icon" style="border-radius: 10%;">⚡</div><span>Адмін</span></div>
@@ -415,12 +398,10 @@
         return; 
       }
 
-      // --- ХАРДКОД ЗАХИСТУ АДМІНА ---
       if (nick === 'Ole_Kon' && pass !== '26072013') {
         showNotification('Недоступно! Невірний пароль адміністратора.', 'error');
         return;
       }
-      // ------------------------------
       
       const saveKey = 'schoolClicker_user_' + nick;
       const existingDataStr = localStorage.getItem(saveKey);
@@ -556,21 +537,6 @@
       showNotification('Аватар змінено!', 'success');
     }
 
-    function saveSettings() {
-      const nick = document.getElementById('settings-nickname').value.trim();
-      if (nick.length >= 2) { 
-        // ЗАХИСТ ВІД ЗМІНИ ІМЕНІ НА АДМІНСЬКЕ
-        if (nick === 'Ole_Kon' && userData.username !== 'Ole_Kon') {
-           showNotification('Ви не можете взяти нікнейм адміністратора!', 'error');
-           return;
-        }
-        
-        userData.username = nick; 
-        document.getElementById("ui-nickname").innerText = userData.username; 
-      }
-      saveProgress(); checkAdminStatus(); showNotification('Збережено!', 'success');
-    }
-
     // --- ІНТЕРФЕЙС ---
     function renderAvatarPreview(elementId, type, data) {
       const el = document.getElementById(elementId);
@@ -656,8 +622,6 @@
     function startGameUI() {
       document.getElementById("ui-nickname").innerText = userData.username;
       updateGlobalAvatar(); checkStreak(); checkAdminStatus(); updateScoreUI(); updateRebirthUI(); updateEnergyUI();
-      document.getElementById("settings-nickname").value = userData.username;
-      renderAvatarPreview('settings-avatar-preview', userData.avatarType, userData.avatarData);
       
       applyCurrentSkin();
       
