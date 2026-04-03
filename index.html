@@ -4,6 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>School Clicker</title>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+  
   <style>
     :root {
       --coin-grad-1: #ffb74d; --coin-grad-2: #f57c00;
@@ -45,7 +48,7 @@
     .minus-money { position: absolute; top: 50px; right: 20px; color: #ff5252; font-size: 20px; font-weight: bold; pointer-events: none; animation: dropDownFade 1.5s ease-out forwards; text-shadow: 0 0 10px #ff5252; z-index: 600; }
     @keyframes dropDownFade { 0% { opacity: 1; transform: translateY(0); } 100% { opacity: 0; transform: translateY(40px); } }
 
-    /* --- ЗАВАНТАЖЕННЯ ТА АВТОРИЗАЦІЯ --- */
+    /* --- АВТОРИЗАЦІЯ --- */
     #loader, #auth-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; position: absolute; top: 0; left: 0; width: 100%; background: #111; z-index: 4000; }
     #auth-screen { display: none; padding: 20px; box-sizing: border-box; overflow-y: auto; }
     .spinner { width: 50px; height: 50px; border: 5px solid rgba(255,255,255,0.1); border-top-color: #ff9800; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 20px; }
@@ -69,7 +72,7 @@
     .screen.active { display: flex; flex-direction: column; animation: fadeIn 0.3s; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-    /* ТАПАЛКА ТА ЕНЕРГІЯ */
+    /* ТАПАЛКА */
     #game-screen { justify-content: center; align-items: center; padding-bottom: 80px; overflow: hidden;}
     .score-container { font-size: clamp(40px, 12vw, 64px); font-weight: bold; margin-bottom: 20px; text-shadow: 0 2px 10px rgba(255, 255, 255, 0.3); text-align: center; width: 100%; white-space: nowrap; }
     .circle-area { position: relative; width: 260px; height: 260px; perspective: 1000px; flex-shrink: 0; }
@@ -80,7 +83,7 @@
     .plus-one { position: absolute; color: #fff; font-size: 35px; font-weight: 900; pointer-events: none; animation: floatUpFadeOut 2s ease-out; opacity: 0; z-index: 100; text-shadow: 0 0 10px #fff; }
     @keyframes floatUpFadeOut { 0% { opacity: 0; transform: translate(-50%, -50%) translateY(0); } 5% { opacity: 1; transform: translate(-50%, -50%) translateY(-20px) scale(1.2); } 100% { opacity: 0; transform: translate(-50%, -50%) translateY(-200px); } }
 
-    /* БЛОК ЕНЕРГІЇ */
+    /* ЕНЕРГІЯ */
     .energy-container { margin-top: 35px; width: 80%; max-width: 260px; display: flex; flex-direction: column; align-items: center; gap: 5px;}
     .energy-bar { width: 100%; height: 12px; background: #333; border-radius: 10px; overflow: hidden; border: 2px solid #555; position: relative;}
     .energy-fill { height: 100%; width: 100%; background: linear-gradient(90deg, #ff9800, #ffeb3b); transition: width 0.1s; }
@@ -88,9 +91,13 @@
     .energy-cooldown-text { color: #ff5252; font-size: 12px; font-weight: bold; animation: blink 1s infinite; display: none; }
     @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
 
-    /* СПІЛЬНІ СТИЛІ ЕКРАНІВ */
-    .screen-header { font-size: 22px; font-weight: bold; margin-bottom: 15px; color: #ff9800; text-align: center; border-bottom: 1px solid #333; padding-bottom: 10px;}
-    .block-title { font-size: 16px; color: #aaa; margin: 10px 0; font-weight: bold;}
+    /* РЕЙТИНГ (НОВИЙ) */
+    .rating-list { display: flex; flex-direction: column; gap: 10px; width: 100%; }
+    .rating-item { background: #2a2a2a; padding: 12px 15px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #444; }
+    .rating-item.top-3 { border-color: #ff9800; background: #3d2500; }
+    .rank-num { font-weight: 900; color: #ff9800; font-size: 18px; width: 30px; }
+    .rank-name { flex: 1; font-weight: bold; font-size: 16px; }
+    .rank-score { color: #ffeb3b; font-weight: bold; }
 
     /* МАГАЗИН */
     .skins-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
@@ -101,26 +108,6 @@
     .item-price { font-size: 11px; color: #ffeb3b; background: rgba(0,0,0,0.5); padding: 3px 8px; border-radius: 10px; }
     .item-owned-badge { font-size: 10px; color: #69f0ae; background: rgba(0,51,0,0.5); padding: 3px 8px; border-radius: 10px; }
     .color-preview { width: 15px; height: 15px; border-radius: 50%; }
-
-    /* БОНУСИ & ПЕРЕРОДЖЕННЯ */
-    .promo-container { background: #222; border: 1px solid #444; border-radius: 10px; padding: 15px; display: flex; flex-direction: column; gap: 10px; margin-bottom: 15px;}
-    .promo-input { background: #111; border: 1px solid #555; color: white; padding: 10px; border-radius: 8px; text-align: center; outline: none;}
-    .promo-btn { background: #ff9800; border: none; padding: 10px; border-radius: 8px; color: #111; font-weight: bold; cursor: pointer; }
-    
-    .rebirth-container { background: #111; border: 2px solid #00e5ff; border-radius: 10px; padding: 20px; display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center; box-shadow: 0 0 15px rgba(0, 229, 255, 0.2); margin-bottom: 15px;}
-    .rebirth-title { font-size: 20px; font-weight: bold; color: #00e5ff; }
-    .rebirth-info { font-size: 14px; color: #ccc; }
-    .rebirth-multiplier { font-size: 24px; font-weight: bold; color: #00e5ff; margin: 5px 0; text-shadow: 0 0 10px rgba(0, 229, 255, 0.5); }
-    .rebirth-btn { background: linear-gradient(145deg, #00b0ff, #0091ea); border: none; padding: 12px 20px; border-radius: 8px; color: #fff; font-weight: bold; cursor: pointer; width: 100%; font-size: 15px; box-shadow: 0 4px 10px rgba(0, 176, 255, 0.4); }
-    .rebirth-btn:disabled { background: #333; color: #777; cursor: not-allowed; box-shadow: none; border: 1px solid #555; }
-
-    /* АКТИВ (СТРИК) */
-    .streak-container { background: #222; border: 2px solid #ff9800; border-radius: 15px; padding: 30px; text-align: center; margin-top: 20px; box-shadow: 0 0 20px rgba(255, 152, 0, 0.2); }
-    .streak-icon { font-size: 60px; margin-bottom: 10px; animation: pulse 2s infinite; }
-    .streak-title { font-size: 18px; color: #aaa; margin-bottom: 5px; font-weight: bold; }
-    .streak-count { font-size: 48px; font-weight: bold; color: #ff9800; text-shadow: 0 0 10px rgba(255,152,0,0.5); }
-    .streak-desc { font-size: 13px; color: #888; margin-top: 15px; }
-    @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
 
     /* НАЛАШТУВАННЯ */
     .settings-block { background: #222; border-radius: 10px; padding: 15px; display: flex; flex-direction: column; align-items: center; gap: 15px; }
@@ -152,12 +139,12 @@
 
   <div id="auth-screen">
     <div class="auth-title">Вхід у гру</div>
-    <div class="auth-subtitle">Введіть свій нік та пароль (або придумайте нові для реєстрації)</div>
+    <div class="auth-subtitle">Введіть свій нік та пароль</div>
     
     <input type="text" id="reg-nickname" class="auth-input" placeholder="Нікнейм (від 2 букв)" maxlength="12">
     <input type="password" id="reg-password" class="auth-input" placeholder="Пароль" maxlength="12">
     
-    <div class="block-title">Обери аватар або завантаж свій:</div>
+    <div class="block-title">Обери аватар:</div>
     <div class="avatars-grid" id="reg-avatars">
       <div class="avatar-option selected" onclick="selectRegAvatar(this, 'emoji', '😎')">😎</div>
       <div class="avatar-option" onclick="selectRegAvatar(this, 'emoji', '👽')">👽</div>
@@ -197,21 +184,16 @@
       <div class="skins-grid" id="colors-container"></div>
     </div>
 
-    <div id="active-screen" class="screen">
-      <div class="screen-header">Активність</div>
-      <div class="streak-container">
-        <div class="streak-icon">🔥</div>
-        <div class="streak-title">Ти заходиш у гру вже:</div>
-        <div class="streak-count"><span id="ui-streak">1</span> днів</div>
-        <div class="streak-desc">Заходь кожен день, щоб серія не перервалася!</div>
+    <div id="rating-screen" class="screen">
+      <div class="screen-header">Топ Гравців 🏆</div>
+      <div class="rating-list" id="rating-container">
+        <p style="text-align:center; color:#888;">Завантаження рейтингу...</p>
       </div>
     </div>
 
     <div id="game-screen" class="screen active">
       <div class="score-container" id="big-score">0</div>
-      
       <div class="circle-area"><div class="coin" id="tap-zone"><span class="coin-text" id="main-coin-text">Музика</span></div></div>
-      
       <div class="energy-container">
         <div class="energy-bar"><div class="energy-fill" id="ui-energy-fill"></div></div>
         <div class="energy-text">⚡ <span id="ui-energy-val">10000</span> / 10000</div>
@@ -221,14 +203,11 @@
 
     <div id="bonus-screen" class="screen">
       <div class="screen-header">Бонуси & Переродження</div>
-      
       <div class="rebirth-container">
         <div class="rebirth-title">🌟 ПЕРЕРОДЖЕННЯ</div>
-        <div class="rebirth-info">Скидає всі твої монети та покупки в магазині, але збільшує силу тапу назавжди! Також безкоштовно розблоковує нові предмети і кольори.</div>
         <div class="rebirth-multiplier">Сила тапу: +<span id="ui-click-power">1</span></div>
         <button class="rebirth-btn" id="btn-rebirth" onclick="doRebirth()">Переродитися (🪙 <span id="rebirth-cost-text">1 000</span>)</button>
       </div>
-
       <div class="promo-container">
         <div style="font-weight:bold; color:#ff9800; text-align:center;">Промокод</div>
         <input type="text" id="promo-input" class="promo-input" placeholder="Код...">
@@ -240,84 +219,62 @@
       <div class="screen-header">Налаштування</div>
       <div class="settings-block">
         <div class="avatar-preview-circle" id="settings-avatar-preview" style="width: 80px; height: 80px; font-size: 40px;"></div>
-        
-        <div class="block-title" style="margin-bottom: 5px; color: #ccc;">Обери емодзі:</div>
-        <div class="avatars-grid" id="settings-avatars" style="margin-bottom: 10px;">
-          <div class="avatar-option" onclick="changeSettingsAvatar('emoji', '😎')">😎</div>
-          <div class="avatar-option" onclick="changeSettingsAvatar('emoji', '👽')">👽</div>
-          <div class="avatar-option" onclick="changeSettingsAvatar('emoji', '🐱')">🐱</div>
-          <div class="avatar-option" onclick="changeSettingsAvatar('emoji', '👾')">👾</div>
+        <div class="avatars-grid">
+            <div class="avatar-option" onclick="changeSettingsAvatar('emoji', '😎')">😎</div>
+            <div class="avatar-option" onclick="changeSettingsAvatar('emoji', '👽')">👽</div>
+            <div class="avatar-option" onclick="changeSettingsAvatar('emoji', '🐱')">🐱</div>
+            <div class="avatar-option" onclick="changeSettingsAvatar('emoji', '👾')">👾</div>
         </div>
-
-        <label class="file-upload-label">
-          📷 Або завантаж фото
-          <input type="file" accept="image/*" onchange="handleFileUpload(event, 'settings')">
-        </label>
-        
+        <label class="file-upload-label">📷 Змінити фото <input type="file" accept="image/*" onchange="handleFileUpload(event, 'settings')"></label>
         <button class="logout-btn" onclick="logoutUser()">🚪 Вийти з акаунта</button>
       </div>
     </div>
 
     <div id="admin-screen" class="screen">
       <div class="screen-header" style="color: #d500f9;">God Mode ⚡</div>
-      <div class="block-title" style="text-align:center; color: #fff;">Привіт, Творець!</div>
-      
-      <button class="admin-btn" onclick="adminResetCooldown()" style="border-color: #ffeb3b; color: #ffeb3b; text-shadow: 0 0 5px #ffeb3b;">⚡ Відновити енергію</button>
-
+      <button class="admin-btn" onclick="adminResetCooldown()">⚡ Відновити енергію</button>
       <div class="admin-promo-box">
-        <div style="color: #d500f9; font-weight: bold; font-size: 14px;">🌟 Накрутка Перероджень</div>
-        <input type="number" id="admin-rebirth-val" class="auth-input" placeholder="Кількість..." style="width: 100%; margin-bottom: 5px; padding: 8px;">
-        <button class="admin-btn" onclick="adminGiveCustomRebirths()" style="margin-bottom: 0; padding: 10px; font-size: 14px;">Видати переродження</button>
+        <input type="number" id="admin-coin-val" class="auth-input" placeholder="Видати монети...">
+        <button class="admin-btn" onclick="adminGiveCustomCoins()">Видати монети</button>
       </div>
-
-      <div class="admin-promo-box">
-        <div style="color: #d500f9; font-weight: bold; font-size: 14px;">💰 Накрутка монет</div>
-        <input type="number" id="admin-coin-val" class="auth-input" placeholder="Введіть суму..." style="width: 100%; margin-bottom: 5px; padding: 8px;">
-        <button class="admin-btn" onclick="adminGiveCustomCoins()" style="margin-bottom: 0; padding: 10px; font-size: 14px;">Видати монети</button>
-      </div>
-
-      <div class="admin-promo-box">
-        <div style="color: #d500f9; font-weight: bold; font-size: 14px;">🔥 Накрутка активу (днів)</div>
-        <input type="number" id="admin-streak-val" class="auth-input" placeholder="Кількість днів..." style="width: 100%; margin-bottom: 5px; padding: 8px;">
-        <button class="admin-btn" onclick="adminGiveCustomStreak()" style="margin-bottom: 0; padding: 10px; font-size: 14px;">Видати актив</button>
-      </div>
-      
-      <button class="admin-btn" onclick="adminUnlockAll()">🔓 Розблокувати весь магазин</button>
-      
-      <div class="admin-promo-box">
-        <div style="color: #d500f9; font-weight: bold; font-size: 14px;">🎁 Створити новий промокод</div>
-        <input type="text" id="admin-promo-name" class="auth-input" placeholder="Назва коду" style="width: 100%; margin-bottom: 5px; padding: 8px;">
-        <input type="number" id="admin-promo-reward" class="auth-input" placeholder="Сума монет" style="width: 100%; margin-bottom: 5px; padding: 8px;">
-        <button class="admin-btn" onclick="adminAddPromo()" style="margin-bottom: 0; padding: 10px; font-size: 14px;">➕ Створити код</button>
-      </div>
+      <button class="admin-btn" onclick="adminUnlockAll()">🔓 Розблокувати шоп</button>
     </div>
 
     <div class="bottom-nav">
-      <div class="nav-item" id="nav-skins" onclick="switchTab('skins-screen', 'nav-skins')"><div class="nav-icon" style="border-radius:50%;"></div><span>Шоп</span></div>
-      <div class="nav-item" id="nav-active" onclick="switchTab('active-screen', 'nav-active')"><div class="nav-icon" style="clip-path: polygon(50% 0%, 100% 100%, 0% 100%);"></div><span>Актив</span></div>
+      <div class="nav-item" id="nav-skins" onclick="switchTab('skins-screen', 'nav-skins')"><div class="nav-icon"></div><span>Шоп</span></div>
+      <div class="nav-item" id="nav-rating" onclick="switchTab('rating-screen', 'nav-rating')"><div class="nav-icon">🏆</div><span>Топ</span></div>
       <div class="nav-item active" id="nav-game" onclick="switchTab('game-screen', 'nav-game')"><div class="nav-icon" style="border-radius:50%; background: radial-gradient(#ffb74d, #f57c00);"></div><span>Тап</span></div>
-      <div class="nav-item" id="nav-bonus" onclick="switchTab('bonus-screen', 'nav-bonus')"><div class="nav-icon" style="clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);"></div><span>Бали</span></div>
-      <div class="nav-item" id="nav-settings" onclick="switchTab('settings-screen', 'nav-settings')"><div class="nav-icon" style="border-radius: 30%;">⚙️</div><span>Налашт.</span></div>
-      <div class="nav-item" id="nav-admin" onclick="switchTab('admin-screen', 'nav-admin')"><div class="nav-icon" style="border-radius: 10%;">⚡</div><span>Адмін</span></div>
+      <div class="nav-item" id="nav-bonus" onclick="switchTab('bonus-screen', 'nav-bonus')"><div class="nav-icon"></div><span>Бали</span></div>
+      <div class="nav-item" id="nav-settings" onclick="switchTab('settings-screen', 'nav-settings')"><div class="nav-icon">⚙️</div><span>Налашт.</span></div>
+      <div class="nav-item" id="nav-admin" onclick="switchTab('admin-screen', 'nav-admin')"><div class="nav-icon">⚡</div><span>Адмін</span></div>
     </div>
   </div>
 
   <script>
-    // --- АУДІО (ЗВУКИ) ---
+    // --- FIREBASE SETUP ---
+    const firebaseConfig = {
+      apiKey: "AIzaSyAOBFEm3wlyIWzk3aAV2vUYW9OsJq8tCyQ",
+      authDomain: "g-combat-rating.firebaseapp.com",
+      databaseURL: "https://g-combat-rating-default-rtdb.firebaseio.com",
+      projectId: "g-combat-rating",
+      storageBucket: "g-combat-rating.firebasestorage.app",
+      messagingSenderId: "986004150415",
+      appId: "1:986004150415:web:7b1e4793a19d34f854f8fa",
+      measurementId: "G-7GEG3MQEJH"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    // --- АУДІО ---
     const sfxTap = new Audio('tap.mp3');
     const sfxBuy = new Audio('buy.mp3');
     const sfxError = new Audio('error.mp3');
     const sfxSuccess = new Audio('success.mp3');
-    sfxTap.volume = 0.4;
+    function playSound(audioObj) { audioObj.currentTime = 0; audioObj.play().catch(e => { }); }
 
-    function playSound(audioObj) {
-      audioObj.currentTime = 0; 
-      audioObj.play().catch(e => { });
-    }
-
-    // --- ДАНІ ГРАВЦЯ ---
+    // --- ДАНІ ---
     let currentUserKey = ''; 
-
     let userData = {
       username: "", password: "", avatarType: "emoji", avatarData: "😎", score: 0,
       ownedSubjects: ['music'], ownedColors: ['default'],
@@ -328,11 +285,8 @@
 
     const MAX_ENERGY = 10000;
     const COOLDOWN_MS = 15 * 60 * 1000; 
+    let tempRegAvatarType = "emoji"; let tempRegAvatarData = "😎";
 
-    let tempRegAvatarType = "emoji";
-    let tempRegAvatarData = "😎";
-
-    // --- БАЗА ТОВАРІВ ---
     const subjectsList = [
       { id: 'music', name: "Музика", price: 0 }, { id: 'art', name: "Малювання", price: 50 },
       { id: 'tech', name: "Технології", price: 100 }, { id: 'physics', name: "Фізика", price: 250 },
@@ -358,254 +312,159 @@
       { id: 'diamond', name: 'Діамант', price: 100000, bg: 'linear-gradient(145deg, #e0f7fa, #84ffff)', edge: '#00b8d4', glow: 'rgba(132, 255, 255, 0.5)' },
       { id: 'rainbow', name: 'Веселковий', price: 250000, bg: 'linear-gradient(45deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #9400d3)', edge: '#4b0082', glow: 'rgba(255, 255, 255, 0.8)' }
     ];
-
     const rebirthCosts = [1000, 5000, 15000, 50000, 150000, 500000, 1000000, 2500000, 5000000, 10000000, 25000000, 50000000];
 
-    // --- ФОРМАТУВАННЯ ЧИСЕЛ ---
     function formatScore(num) {
-      if (num >= 1e12) return (num / 1e12).toFixed(2).replace(/\.00$/, '') + 'T';
-      if (num >= 1e9) return (num / 1e9).toFixed(2).replace(/\.00$/, '') + 'B';
-      if (num >= 1e6) return (num / 1e6).toFixed(2).replace(/\.00$/, '') + 'M';
-      return num.toLocaleString('en-US').replace(/,/g, ' '); 
+      if (num >= 1e12) return (num / 1e12).toFixed(2) + 'T';
+      if (num >= 1e9) return (num / 1e9).toFixed(2) + 'B';
+      if (num >= 1e6) return (num / 1e6).toFixed(2) + 'M';
+      return num.toLocaleString('uk-UA'); 
     }
 
-    // --- СИСТЕМА ЗБЕРЕЖЕННЯ ---
+    // --- СИСТЕМА РЕЙТИНГУ (FIREBASE) ---
+    function sendScoreToFirebase() {
+        if (!currentUserKey) return;
+        db.ref('leaderboard/' + userData.username).set({
+            score: userData.score,
+            rebirths: userData.rebirths,
+            avatarType: userData.avatarType,
+            avatarData: userData.avatarData
+        });
+    }
+
+    function loadLeaderboard() {
+        const container = document.getElementById('rating-container');
+        db.ref('leaderboard').orderByChild('score').limitToLast(20).once('value', (snapshot) => {
+            container.innerHTML = '';
+            let list = [];
+            snapshot.forEach((child) => {
+                list.push({ name: child.key, ...child.val() });
+            });
+            list.reverse(); // Щоб найбільші були зверху
+            list.forEach((player, index) => {
+                const item = document.createElement('div');
+                item.className = `rating-item ${index < 3 ? 'top-3' : ''}`;
+                item.innerHTML = `
+                    <div class="rank-num">#${index + 1}</div>
+                    <div class="rank-name">${player.name}</div>
+                    <div class="rank-score">💰 ${formatScore(player.score)}</div>
+                `;
+                container.appendChild(item);
+            });
+        });
+    }
+
+    // --- ЛОГІКА ГРИ ---
     function saveProgress() { 
       if (currentUserKey) {
         localStorage.setItem(currentUserKey, JSON.stringify(userData)); 
         localStorage.setItem('schoolClicker_lastUser', currentUserKey);
+        sendScoreToFirebase(); // Відправляємо в онлайн при кожному збереженні
       }
-    }
-
-    function loadProgress(userKey) {
-      const saved = localStorage.getItem(userKey);
-      if (saved) { 
-        userData = { ...userData, ...JSON.parse(saved) }; 
-        userData.rebirths = userData.rebirths || 0; 
-        if (userData.energy === undefined) userData.energy = MAX_ENERGY;
-        if (userData.cooldownUntil === undefined) userData.cooldownUntil = 0;
-        return true; 
-      }
-      return false;
     }
 
     function loginOrRegister() {
       const nick = document.getElementById('reg-nickname').value.trim();
       const pass = document.getElementById('reg-password').value.trim();
-      
-      if (nick.length < 2 || pass.length < 2) { 
-        showNotification('Нік та пароль мають бути від 2 символів!', 'error'); 
-        return; 
-      }
-
-      if (nick === 'Ole_Kon' && pass !== '26072013') {
-        showNotification('Недоступно! Невірний пароль адміністратора.', 'error');
-        return;
-      }
+      if (nick.length < 2 || pass.length < 2) return showNotification('Мінімум 2 символи!', 'error');
+      if (nick === 'Ole_Kon' && pass !== '26072013') return showNotification('Адмін-пароль невірний!', 'error');
       
       const saveKey = 'schoolClicker_user_' + nick;
       const existingDataStr = localStorage.getItem(saveKey);
-
       if (existingDataStr) {
         const existingData = JSON.parse(existingDataStr);
         if (existingData.password === pass) {
-          currentUserKey = saveKey;
-          loadProgress(saveKey);
-          document.getElementById('auth-screen').style.display = 'none'; 
-          startGameUI();
-          playSound(sfxSuccess);
-        } else {
-          showNotification('Цей нікнейм вже зайнятий або пароль невірний!', 'error');
-        }
+          currentUserKey = saveKey; userData = { ...userData, ...existingData };
+          document.getElementById('auth-screen').style.display = 'none'; startGameUI();
+        } else { showNotification('Пароль невірний!', 'error'); }
       } else {
-        currentUserKey = saveKey;
-        userData.username = nick; 
-        userData.password = pass; 
-        userData.avatarType = tempRegAvatarType; 
-        userData.avatarData = tempRegAvatarData;
-        userData.energy = MAX_ENERGY; 
-        userData.cooldownUntil = 0;
-        saveProgress(); 
-        document.getElementById('auth-screen').style.display = 'none'; 
-        startGameUI();
-        playSound(sfxSuccess);
+        currentUserKey = saveKey; userData.username = nick; userData.password = pass; 
+        userData.avatarType = tempRegAvatarType; userData.avatarData = tempRegAvatarData;
+        saveProgress(); document.getElementById('auth-screen').style.display = 'none'; startGameUI();
       }
     }
 
-    function logoutUser() {
-      localStorage.removeItem('schoolClicker_lastUser');
-      location.reload(); 
-    }
-
-    function checkStreak() {
-      const today = new Date(); today.setHours(0, 0, 0, 0); const todayTime = today.getTime();
-      if (!userData.lastLoginDate) { userData.lastLoginDate = todayTime; userData.streak = 1; } 
-      else {
-        const diffTime = Math.abs(todayTime - userData.lastLoginDate);
-        const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)); 
-        if (diffDays === 1) { userData.streak++; } else if (diffDays > 1) { userData.streak = 1; }
-        userData.lastLoginDate = todayTime;
+    document.getElementById("tap-zone").addEventListener('click', (e) => {
+      const now = Date.now();
+      if (now < userData.cooldownUntil) return showNotification(`Відпочинь ще трохи!`, 'error');
+      const clickPower = 1 + userData.rebirths;
+      if (userData.energy < clickPower) {
+        userData.cooldownUntil = now + COOLDOWN_MS; userData.energy = 0; updateEnergyUI(); saveProgress();
+        return showNotification(`Енергія 0! Чекай 15 хв.`, 'error');
       }
-      document.getElementById('ui-streak').innerText = userData.streak;
-      document.getElementById('header-streak').innerText = userData.streak;
-      saveProgress();
-    }
+      userData.energy -= clickPower; userData.score += clickPower; updateScoreUI(); updateEnergyUI(); saveProgress();
+      playSound(sfxTap);
+      const p = document.createElement('span'); p.className = 'plus-one'; p.innerText = '+' + clickPower;
+      p.style.left = `${e.clientX}px`; p.style.top = `${e.clientY}px`;
+      document.body.appendChild(p); setTimeout(() => p.remove(), 2000);
+    });
 
-    function checkAdminStatus() {
-      if (userData.username === 'Ole_Kon') {
-        document.getElementById('nav-admin').style.display = 'flex';
-      } else {
-        document.getElementById('nav-admin').style.display = 'none';
-        if(document.getElementById('admin-screen').classList.contains('active')) switchTab('game-screen', 'nav-game'); 
-      }
-    }
-
-    // --- ЕНЕРГІЯ ТА КУЛДАУН ---
     function updateEnergyUI() {
       const now = Date.now();
       const fillEl = document.getElementById('ui-energy-fill');
-      const textEl = document.getElementById('ui-energy-val');
-      const timerEl = document.getElementById('ui-cooldown-timer');
-
       if (now < userData.cooldownUntil) {
-        userData.energy = 0;
-        fillEl.style.width = '0%';
-        textEl.innerText = '0';
-        
-        const remainingMs = userData.cooldownUntil - now;
-        const mins = Math.floor(remainingMs / 60000);
-        const secs = Math.floor((remainingMs % 60000) / 1000);
-        timerEl.innerText = `Відпочинок: ${mins}:${secs < 10 ? '0' : ''}${secs}`;
-        timerEl.style.display = 'block';
+        fillEl.style.width = '0%'; document.getElementById('ui-energy-val').innerText = '0';
+        document.getElementById('ui-cooldown-timer').style.display = 'block';
       } else {
-        timerEl.style.display = 'none';
+        document.getElementById('ui-cooldown-timer').style.display = 'none';
         const percent = (userData.energy / MAX_ENERGY) * 100;
-        fillEl.style.width = `${percent}%`;
-        textEl.innerText = Math.floor(userData.energy);
-        
-        if (percent < 20) fillEl.style.background = '#ff5252';
-        else fillEl.style.background = 'linear-gradient(90deg, #ff9800, #ffeb3b)';
+        fillEl.style.width = `${percent}%`; document.getElementById('ui-energy-val').innerText = Math.floor(userData.energy);
       }
     }
 
     setInterval(() => {
-      const now = Date.now();
-      if (now > userData.cooldownUntil) {
-        if (userData.energy < MAX_ENERGY) {
-          userData.energy = Math.min(MAX_ENERGY, userData.energy + 1);
-          updateEnergyUI();
-        }
-      } else {
-        updateEnergyUI(); 
+      if (Date.now() > userData.cooldownUntil && userData.energy < MAX_ENERGY) {
+        userData.energy = Math.min(MAX_ENERGY, userData.energy + 1); updateEnergyUI();
       }
     }, 1000);
 
-    // --- ФОТО ТА НАЛАШТУВАННЯ ---
-    function handleFileUpload(event, source) {
-      const file = event.target.files[0];
-      if (file) {
-        if(file.size > 2000000) { showNotification('Фото занадто велике! Максимум 2МБ.', 'error'); return; }
-        const reader = new FileReader();
-        reader.onload = function(e) {
-          if (source === 'reg') {
-            tempRegAvatarType = 'image'; tempRegAvatarData = e.target.result;
-            document.querySelectorAll('#reg-avatars .avatar-option').forEach(el => el.classList.remove('selected'));
-            showNotification('Фото завантажено!', 'success');
-          } else if (source === 'settings') {
-            userData.avatarType = 'image'; userData.avatarData = e.target.result;
-            renderAvatarPreview('settings-avatar-preview', userData.avatarType, userData.avatarData);
-            updateGlobalAvatar(); saveProgress(); showNotification('Аватар змінено!', 'success');
-          }
-        };
-        reader.readAsDataURL(file);
-      }
-    }
-
-    function selectRegAvatar(element, type, data) {
-      document.querySelectorAll('#reg-avatars .avatar-option').forEach(el => el.classList.remove('selected'));
-      element.classList.add('selected'); tempRegAvatarType = type; tempRegAvatarData = data;
+    function switchTab(screenId, navId) {
+      document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+      document.getElementById(screenId).classList.add('active');
+      document.getElementById(navId).classList.add('active');
+      if (screenId === 'rating-screen') loadLeaderboard(); // Завантажуємо топ при переході
       playSound(sfxTap);
     }
-    
-    function changeSettingsAvatar(type, data) {
-      userData.avatarType = type;
-      userData.avatarData = data;
-      renderAvatarPreview('settings-avatar-preview', userData.avatarType, userData.avatarData);
-      updateGlobalAvatar();
-      saveProgress();
-      playSound(sfxTap);
-      showNotification('Аватар змінено!', 'success');
-    }
-
-    // --- ІНТЕРФЕЙС ---
-    function renderAvatarPreview(elementId, type, data) {
-      const el = document.getElementById(elementId);
-      if (type === 'image') { el.innerHTML = ''; el.style.backgroundImage = `url(${data})`; } 
-      else { el.style.backgroundImage = 'none'; el.innerHTML = data; }
-    }
-    
-    function updateGlobalAvatar() { renderAvatarPreview('ui-avatar', userData.avatarType, userData.avatarData); }
 
     function updateScoreUI() {
-      const formattedScore = formatScore(userData.score);
-      document.getElementById("big-score").innerText = formattedScore;
-      document.getElementById("global-score").innerText = formattedScore;
+        const fs = formatScore(userData.score);
+        document.getElementById("big-score").innerText = fs;
+        document.getElementById("global-score").innerText = fs;
     }
 
-    function showNotification(text, type) {
-      const el = document.getElementById("notification");
-      el.innerText = text; 
-      
-      if(type === 'error') { el.className = 'notif-error'; playSound(sfxError); } 
-      else if(type === 'admin') { el.className = 'notif-admin'; playSound(sfxSuccess); } 
-      else if(type === 'rebirth') { el.className = 'notif-rebirth'; playSound(sfxSuccess); } 
-      else { el.className = 'notif-success'; playSound(sfxSuccess); }
-      
-      el.style.top = '20px'; setTimeout(() => { el.style.top = '-100px'; }, 2000);
-    }
-
-    // --- ПЕРЕРОДЖЕННЯ (СКИДАННЯ) ---
-    function calculateRebirthUnlocks() {
-      userData.ownedSubjects = ['music'];
-      userData.ownedColors = ['default'];
-      userData.currentSubjectId = 'music';
-      userData.currentColorId = 'default';
-      userData.energy = MAX_ENERGY;
-      userData.cooldownUntil = 0;
-
-      for(let i = 1; i <= userData.rebirths; i++) {
-        if(i < subjectsList.length) userData.ownedSubjects.push(subjectsList[i].id);
-        if(i < colorsList.length) userData.ownedColors.push(colorsList[i].id);
-      }
+    function startGameUI() {
+      document.getElementById("ui-nickname").innerText = userData.username;
+      updateScoreUI(); updateEnergyUI(); renderShop();
+      if (userData.username === 'Ole_Kon') document.getElementById('nav-admin').style.display = 'flex';
+      document.getElementById("app").style.display = "flex"; document.getElementById("global-header").style.display = "flex";
+      renderAvatarPreview('ui-avatar', userData.avatarType, userData.avatarData);
       applyCurrentSkin();
     }
 
-    function updateRebirthUI() {
-      document.getElementById('header-rebirth').innerText = userData.rebirths;
-      document.getElementById('ui-click-power').innerText = (1 + userData.rebirths);
-      
-      const btn = document.getElementById('btn-rebirth');
-      if (userData.rebirths >= rebirthCosts.length) {
-        btn.innerText = "ДОСЯГНУТО МАКСИМУМУ";
-        btn.disabled = true;
-      } else {
-        btn.innerHTML = `Переродитися (🪙 ${formatScore(rebirthCosts[userData.rebirths])})`;
-      }
+    function renderShop() {
+      const sCont = document.getElementById('subjects-container'); const cCont = document.getElementById('colors-container');
+      sCont.innerHTML = ''; cCont.innerHTML = '';
+      subjectsList.forEach(item => {
+        const card = document.createElement('div'); card.className = `shop-card ${userData.ownedSubjects.includes(item.id) ? 'owned' : ''} ${userData.currentSubjectId === item.id ? 'selected' : ''}`;
+        card.innerHTML = `<span class="item-name">${item.name}</span>${userData.ownedSubjects.includes(item.id) ? '' : `<div class="item-price">🪙 ${formatScore(item.price)}</div>`}`;
+        card.onclick = () => handlePurchase('subject', item); sCont.appendChild(card);
+      });
+      colorsList.forEach(item => {
+        const card = document.createElement('div'); card.className = `shop-card ${userData.ownedColors.includes(item.id) ? 'owned' : ''} ${userData.currentColorId === item.id ? 'selected' : ''}`;
+        card.innerHTML = `<div class="color-preview" style="background:${item.bg}"></div><span class="item-name">${item.name}</span>${userData.ownedColors.includes(item.id) ? '' : `<div class="item-price">🪙 ${formatScore(item.price)}</div>`}`;
+        card.onclick = () => handlePurchase('color', item); cCont.appendChild(card);
+      });
     }
 
-    function doRebirth() {
-      if (userData.rebirths >= rebirthCosts.length) return;
-      const cost = rebirthCosts[userData.rebirths];
-      
-      if (userData.score >= cost) {
-        userData.score = 0; 
-        userData.rebirths++;
-        calculateRebirthUnlocks(); 
-        updateScoreUI(); updateRebirthUI(); saveProgress(); renderShop(); updateEnergyUI();
-        showNotification('🌟 ПЕРЕРОДЖЕННЯ УСПІШНЕ!', 'rebirth');
-      } else {
-        showNotification('Не вистачає монет!', 'error');
-      }
+    function handlePurchase(type, item) {
+      const list = type === 'subject' ? userData.ownedSubjects : userData.ownedColors;
+      if (list.includes(item.id)) {
+          if(type === 'subject') userData.currentSubjectId = item.id; else userData.currentColorId = item.id;
+          applyCurrentSkin(); saveProgress(); renderShop();
+      } else if (userData.score >= item.price) {
+          userData.score -= item.price; list.push(item.id); playSound(sfxBuy); saveProgress(); renderShop(); updateScoreUI();
+      } else { showNotification('Нема грошей!', 'error'); }
     }
 
     function applyCurrentSkin() {
@@ -619,189 +478,23 @@
       }
     }
 
-    function startGameUI() {
-      document.getElementById("ui-nickname").innerText = userData.username;
-      updateGlobalAvatar(); checkStreak(); checkAdminStatus(); updateScoreUI(); updateRebirthUI(); updateEnergyUI();
-      
-      applyCurrentSkin();
-      
-      renderShop(); document.getElementById("app").style.display = "flex"; document.getElementById("global-header").style.display = "flex";
+    function renderAvatarPreview(id, t, d) {
+      const el = document.getElementById(id);
+      if (t === 'image') el.style.backgroundImage = `url(${d})`; else { el.style.backgroundImage = 'none'; el.innerHTML = d; }
     }
 
-    // --- ФУНКЦІЇ АДМІНА ---
-    function adminResetCooldown() {
-      userData.cooldownUntil = 0;
-      userData.energy = MAX_ENERGY;
-      updateEnergyUI(); saveProgress();
-      showNotification('⚡ Енергію повністю відновлено!', 'admin');
+    function showNotification(t, type) {
+      const el = document.getElementById("notification"); el.innerText = t; el.className = type === 'error' ? 'notif-error' : 'notif-success';
+      el.style.top = '20px'; setTimeout(() => el.style.top = '-100px', 2000); if(type === 'error') playSound(sfxError); else playSound(sfxSuccess);
     }
 
-    function adminGiveCustomCoins() {
-      const val = parseInt(document.getElementById('admin-coin-val').value);
-      if (isNaN(val) || val <= 0) { showNotification('Введіть правильну суму!', 'error'); return; }
-      userData.score += val; updateScoreUI(); saveProgress(); showNotification(`ВИДАНО +${formatScore(val)} 💰`, 'admin');
-      document.getElementById('admin-coin-val').value = '';
-    }
-
-    function adminGiveCustomStreak() {
-      const val = parseInt(document.getElementById('admin-streak-val').value);
-      if (isNaN(val) || val <= 0) { showNotification('Введіть правильну кількість!', 'error'); return; }
-      userData.streak += val; document.getElementById('ui-streak').innerText = userData.streak; document.getElementById('header-streak').innerText = userData.streak;
-      saveProgress(); showNotification(`ВИДАНО +${val} ДНІВ 🔥`, 'admin'); document.getElementById('admin-streak-val').value = '';
-    }
-
-    function adminGiveCustomRebirths() {
-      const val = parseInt(document.getElementById('admin-rebirth-val').value);
-      if (isNaN(val) || val <= 0) { showNotification('Введіть правильну кількість!', 'error'); return; }
-      
-      let added = 0;
-      for(let i=0; i<val; i++) {
-        if(userData.rebirths < rebirthCosts.length) {
-            userData.rebirths++;
-            added++;
-        }
-      }
-      
-      if (added > 0) {
-         calculateRebirthUnlocks();
-         updateRebirthUI(); saveProgress(); renderShop(); updateEnergyUI();
-         showNotification(`ВИДАНО +${added} 🌟`, 'admin');
-      } else {
-         showNotification('Досягнуто максимум перероджень!', 'error');
-      }
-      document.getElementById('admin-rebirth-val').value = '';
-    }
-
-    function adminUnlockAll() {
-      subjectsList.forEach(s => { if(!userData.ownedSubjects.includes(s.id)) userData.ownedSubjects.push(s.id); });
-      colorsList.forEach(c => { if(!userData.ownedColors.includes(c.id)) userData.ownedColors.push(c.id); });
-      saveProgress(); renderShop(); showNotification('МАГАЗИН РОЗБЛОКОВАНО 🔓', 'admin');
-    }
-
-    function adminAddPromo() {
-      const nameInput = document.getElementById('admin-promo-name'); const rewardInput = document.getElementById('admin-promo-reward');
-      const name = nameInput.value.trim(); const reward = parseInt(rewardInput.value.trim());
-      if (name.length < 3) { showNotification('Код занадто короткий!', 'error'); return; }
-      if (isNaN(reward) || reward <= 0) { showNotification('Введіть правильну суму!', 'error'); return; }
-      if (!userData.customPromos) userData.customPromos = {};
-      userData.customPromos[name] = reward; saveProgress();
-      showNotification(`Код ${name} створено!`, 'admin'); nameInput.value = ''; rewardInput.value = '';
-    }
-
-    // --- ТАП (З ЕНЕРГІЄЮ) ---
-    document.getElementById("tap-zone").addEventListener('click', (e) => {
-      const now = Date.now();
-      
-      if (now < userData.cooldownUntil) {
-        const remainingMs = userData.cooldownUntil - now;
-        const mins = Math.ceil(remainingMs / 60000);
-        showNotification(`Відпочинь! Можна буде потапати через ${mins} хв.`, 'error');
-        return;
-      }
-
-      const clickPower = 1 + userData.rebirths;
-
-      if (userData.energy < clickPower) {
-        userData.cooldownUntil = now + COOLDOWN_MS;
-        userData.energy = 0;
-        updateEnergyUI();
-        saveProgress();
-        showNotification(`Енергія вичерпана! Відпочинь 15 хв.`, 'error');
-        return;
-      }
-
-      userData.energy -= clickPower;
-      userData.score += clickPower; 
-      updateScoreUI(); updateEnergyUI(); saveProgress();
-      
-      playSound(sfxTap);
-      if (navigator.vibrate) navigator.vibrate(50);
-      
-      const p = document.createElement('span'); p.className = 'plus-one'; p.innerText = '+' + clickPower;
-      p.style.left = `${e.clientX}px`; p.style.top = `${e.clientY}px`;
-      document.body.appendChild(p); setTimeout(() => p.remove(), 2000);
-    });
-
-    function switchTab(screenId, navId) {
-      document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
-      document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
-      document.getElementById(screenId).classList.add('active');
-      document.getElementById(navId).classList.add('active');
-      document.getElementById("big-score").style.display = screenId === 'game-screen' ? 'block' : 'none';
-      playSound(sfxTap);
-    }
-
-    // МАГАЗИН
-    function renderShop() {
-      const sCont = document.getElementById('subjects-container'); const cCont = document.getElementById('colors-container');
-      sCont.innerHTML = ''; cCont.innerHTML = '';
-
-      subjectsList.forEach(item => {
-        const card = document.createElement('div'); card.className = `shop-card ${userData.ownedSubjects.includes(item.id) ? 'owned' : ''} ${userData.currentSubjectId === item.id ? 'selected' : ''}`;
-        card.innerHTML = `<span class="item-name">${item.name}</span>${userData.ownedSubjects.includes(item.id) ? '<div class="item-owned-badge">Куплено</div>' : `<div class="item-price">🪙 ${formatScore(item.price)}</div>`}`;
-        card.onclick = () => handlePurchase('subject', item); sCont.appendChild(card);
-      });
-
-      colorsList.forEach(item => {
-        const card = document.createElement('div'); card.className = `shop-card ${userData.ownedColors.includes(item.id) ? 'owned' : ''} ${userData.currentColorId === item.id ? 'selected' : ''}`;
-        card.innerHTML = `<div class="color-preview" style="background:${item.bg}"></div><span class="item-name">${item.name}</span>${userData.ownedColors.includes(item.id) ? '<div class="item-owned-badge">Куплено</div>' : `<div class="item-price">🪙 ${formatScore(item.price)}</div>`}`;
-        card.onclick = () => handlePurchase('color', item); cCont.appendChild(card);
-      });
-    }
-
-    function handlePurchase(type, item) {
-      const isSubj = type === 'subject';
-      if ((isSubj ? userData.ownedSubjects : userData.ownedColors).includes(item.id)) {
-        if (isSubj) { userData.currentSubjectId = item.id; } 
-        else { userData.currentColorId = item.id; }
-        playSound(sfxTap);
-        applyCurrentSkin();
-      } else if (userData.score >= item.price) {
-        userData.score -= item.price; updateScoreUI(); 
-        
-        const minus = document.createElement('div'); minus.className = 'minus-money'; minus.innerText = `-${formatScore(item.price)}`;
-        document.body.appendChild(minus); setTimeout(() => minus.remove(), 1500);
-
-        showNotification('Куплено!', 'success');
-        playSound(sfxBuy);
-        
-        if (isSubj) { userData.ownedSubjects.push(item.id); userData.currentSubjectId = item.id; } 
-        else { userData.ownedColors.push(item.id); userData.currentColorId = item.id; }
-        applyCurrentSkin();
-      } else { showNotification('Не вистачає монет!', 'error'); return; }
-      saveProgress(); renderShop();
-    }
-
-    // ПРОМОКОДИ
-    function applyPromoCode() {
-      const el = document.getElementById('promo-input'); const code = el.value.trim();
-      if (code === '') return;
-      let reward = 0;
-      
-      if (code === 'OleKon7gcombat') { reward = 100; } 
-      else if (userData.customPromos && userData.customPromos[code]) { reward = userData.customPromos[code]; }
-
-      if (reward > 0) {
-        if (userData.usedPromoCodes.includes(code)) { showNotification('Вже використано!', 'error'); } 
-        else {
-          userData.score += reward; userData.usedPromoCodes.push(code); updateScoreUI(); saveProgress(); 
-          showNotification(`Активовано! +${formatScore(reward)}`, 'success'); el.value = ''; 
-        }
-      } else { showNotification('Неправильний код!', 'error'); }
-    }
-
-    window.onload = function() {
+    window.onload = () => {
       setTimeout(() => {
         document.getElementById("loader").style.display = "none";
-        
-        const lastUser = localStorage.getItem('schoolClicker_lastUser');
-        if (lastUser && loadProgress(lastUser)) {
-          currentUserKey = lastUser;
-          startGameUI();
-        } else {
-          document.getElementById("auth-screen").style.display = "flex";
-        }
-      }, 1500); 
+        const last = localStorage.getItem('schoolClicker_lastUser');
+        if (last) { currentUserKey = last; userData = JSON.parse(localStorage.getItem(last)); startGameUI(); }
+        else { document.getElementById("auth-screen").style.display = "flex"; }
+      }, 1000);
     };
   </script>
 </body>
