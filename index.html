@@ -50,8 +50,10 @@
     #auth-screen { display: none; padding: 20px; box-sizing: border-box; overflow-y: auto; }
     .spinner { width: 50px; height: 50px; border: 5px solid rgba(255,255,255,0.1); border-top-color: #ff9800; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 20px; }
     @keyframes spin { to { transform: rotate(360deg); } }
-    .auth-title { font-size: 26px; color: #ff9800; margin-bottom: 15px; font-weight: bold; }
-    .auth-input { background: #222; border: 2px solid #555; color: white; padding: 12px; border-radius: 10px; font-size: 16px; outline: none; text-align: center; width: 100%; max-width: 280px; margin-bottom: 15px; }
+    .auth-title { font-size: 26px; color: #ff9800; margin-bottom: 5px; font-weight: bold; text-align: center; }
+    .auth-subtitle { font-size: 14px; color: #888; margin-bottom: 20px; text-align: center; }
+    
+    .auth-input { background: #222; border: 2px solid #555; color: white; padding: 12px; border-radius: 10px; font-size: 16px; outline: none; text-align: center; width: 100%; max-width: 280px; margin-bottom: 10px; }
     .auth-input:focus { border-color: #ff9800; }
     .avatars-grid { display: flex; gap: 10px; justify-content: center; margin-bottom: 15px; flex-wrap: wrap; max-width: 280px; }
     .avatar-option { width: 45px; height: 45px; display: flex; justify-content: center; align-items: center; font-size: 28px; background: #222; border-radius: 50%; cursor: pointer; border: 2px solid transparent; background-size: cover; background-position: center; transition: 0.2s;}
@@ -59,7 +61,7 @@
     .avatar-option:active { transform: scale(0.9); }
     .file-upload-label { background: #333; padding: 10px 15px; border-radius: 10px; font-size: 14px; cursor: pointer; border: 1px dashed #ff9800; color: #ff9800; margin-bottom: 20px; display: block; text-align: center; width: max-content; }
     input[type="file"] { display: none; }
-    .auth-btn { background: linear-gradient(145deg, #69f0ae, #00c853); border: none; padding: 12px 30px; border-radius: 20px; color: #000; font-weight: bold; font-size: 16px; cursor: pointer; box-shadow: 0 5px 15px rgba(0, 200, 83, 0.4); }
+    .auth-btn { background: linear-gradient(145deg, #69f0ae, #00c853); border: none; padding: 12px 30px; border-radius: 20px; color: #000; font-weight: bold; font-size: 16px; cursor: pointer; box-shadow: 0 5px 15px rgba(0, 200, 83, 0.4); margin-top: 10px;}
 
     /* --- ОСНОВНІ ЕКРАНИ --- */
     #app { display: none; height: 100vh; width: 100%; flex-direction: column; padding-top: 60px; box-sizing: border-box; }
@@ -120,8 +122,15 @@
     .streak-desc { font-size: 13px; color: #888; margin-top: 15px; }
     @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
 
+    /* ОНОВЛЕННЯ */
+    .update-card { background: #222; border-left: 4px solid #ff9800; border-radius: 8px; padding: 12px; margin-bottom: 10px; }
+    .update-version { font-weight: bold; color: #ff9800; margin-bottom: 5px; font-size: 14px;}
+    .update-desc { font-size: 13px; color: #ccc; }
+
     /* НАЛАШТУВАННЯ */
     .settings-block { background: #222; border-radius: 10px; padding: 15px; display: flex; flex-direction: column; align-items: center; gap: 15px; }
+    .logout-btn { background: transparent; border: 2px solid #ff5252; color: #ff5252; padding: 10px 20px; border-radius: 10px; font-weight: bold; cursor: pointer; margin-top: 10px; width: 100%; transition: 0.2s;}
+    .logout-btn:active { background: #ff5252; color: #fff; }
 
     /* АДМІН ПАНЕЛЬ */
     .admin-btn { background: #111; border: 2px solid #d500f9; color: #d500f9; padding: 15px; width: 100%; border-radius: 10px; font-size: 16px; font-weight: bold; margin-bottom: 10px; cursor: pointer; transition: 0.2s; text-shadow: 0 0 5px #d500f9; }
@@ -147,8 +156,11 @@
   <div id="loader"><div class="spinner"></div><h2 style="color: #ff9800;">Завантаження...</h2></div>
 
   <div id="auth-screen">
-    <div class="auth-title">Твій Профіль</div>
+    <div class="auth-title">Вхід у гру</div>
+    <div class="auth-subtitle">Введіть свій нік та пароль (або придумайте нові для реєстрації)</div>
+    
     <input type="text" id="reg-nickname" class="auth-input" placeholder="Нікнейм (від 2 букв)" maxlength="12">
+    <input type="password" id="reg-password" class="auth-input" placeholder="Пароль" maxlength="12">
     
     <div class="block-title">Обери аватар або завантаж свій:</div>
     <div class="avatars-grid" id="reg-avatars">
@@ -163,7 +175,7 @@
       <input type="file" accept="image/*" id="reg-file-upload" onchange="handleFileUpload(event, 'reg')">
     </label>
 
-    <button class="auth-btn" onclick="registerUser()">Почати гру</button>
+    <button class="auth-btn" onclick="loginOrRegister()">Грати</button>
   </div>
 
   <div id="global-header">
@@ -212,6 +224,16 @@
       </div>
     </div>
 
+    <div id="updates-screen" class="screen">
+      <div class="screen-header">Оновлення</div>
+      <div class="update-card" style="border-color: #69f0ae;">
+        <div class="update-version"><span style="color:#69f0ae;">v2.7 - Акаунти та Енергія</span></div>
+        <div class="update-desc">Додано систему повноцінних локальних акаунтів з паролями. Баланс енергії вирівняно (відновлення 1 од./сек).</div>
+      </div>
+      <div class="update-card"><div class="update-version">v2.6 - Захист від читерів</div><div class="update-desc">Додано енергію на 10,000 тапів.</div></div>
+      <div class="update-card"><div class="update-version">v2.5 - Фікс Перероджень</div><div class="update-desc">При переродженні магазин і монети чесно згорають.</div></div>
+    </div>
+
     <div id="bonus-screen" class="screen">
       <div class="screen-header">Бонуси & Переродження</div>
       
@@ -247,8 +269,7 @@
           <input type="file" accept="image/*" onchange="handleFileUpload(event, 'settings')">
         </label>
         
-        <input type="text" id="settings-nickname" class="auth-input" placeholder="Новий нікнейм" maxlength="12">
-        <button class="auth-btn" style="padding: 10px 20px; font-size: 14px;" onclick="saveSettings()">Зберегти зміни</button>
+        <button class="logout-btn" onclick="logoutUser()">🚪 Вийти з акаунта</button>
       </div>
     </div>
 
@@ -290,6 +311,7 @@
       <div class="nav-item" id="nav-skins" onclick="switchTab('skins-screen', 'nav-skins')"><div class="nav-icon" style="border-radius:50%;"></div><span>Шоп</span></div>
       <div class="nav-item" id="nav-active" onclick="switchTab('active-screen', 'nav-active')"><div class="nav-icon" style="clip-path: polygon(50% 0%, 100% 100%, 0% 100%);"></div><span>Актив</span></div>
       <div class="nav-item active" id="nav-game" onclick="switchTab('game-screen', 'nav-game')"><div class="nav-icon" style="border-radius:50%; background: radial-gradient(#ffb74d, #f57c00);"></div><span>Тап</span></div>
+      <div class="nav-item" id="nav-updates" onclick="switchTab('updates-screen', 'nav-updates')"><div class="nav-icon" style="border-radius: 50% 0 50% 0;"></div><span>Онови</span></div>
       <div class="nav-item" id="nav-bonus" onclick="switchTab('bonus-screen', 'nav-bonus')"><div class="nav-icon" style="clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);"></div><span>Бали</span></div>
       <div class="nav-item" id="nav-settings" onclick="switchTab('settings-screen', 'nav-settings')"><div class="nav-icon" style="border-radius: 30%;">⚙️</div><span>Налашт.</span></div>
       <div class="nav-item" id="nav-admin" onclick="switchTab('admin-screen', 'nav-admin')"><div class="nav-icon" style="border-radius: 10%;">⚡</div><span>Адмін</span></div>
@@ -310,8 +332,10 @@
     }
 
     // --- ДАНІ ГРАВЦЯ ---
+    let currentUserKey = ''; // Ключ для збереження конкретного юзера
+
     let userData = {
-      username: "", avatarType: "emoji", avatarData: "😎", score: 0,
+      username: "", password: "", avatarType: "emoji", avatarData: "😎", score: 0,
       ownedSubjects: ['music'], ownedColors: ['default'],
       currentSubjectId: 'music', currentColorId: 'default', usedPromoCodes: [],
       streak: 1, lastLoginDate: 0, customPromos: {}, rebirths: 0,
@@ -362,10 +386,16 @@
       return num.toLocaleString('en-US').replace(/,/g, ' '); 
     }
 
-    // --- СИСТЕМА ЗБЕРЕЖЕННЯ ---
-    function saveProgress() { localStorage.setItem('schoolClickerSave', JSON.stringify(userData)); }
-    function loadProgress() {
-      const saved = localStorage.getItem('schoolClickerSave');
+    // --- СИСТЕМА ЗБЕРЕЖЕННЯ ТА АВТОРИЗАЦІЇ (ОНОВЛЕНО) ---
+    function saveProgress() { 
+      if (currentUserKey) {
+        localStorage.setItem(currentUserKey, JSON.stringify(userData)); 
+        localStorage.setItem('schoolClicker_lastUser', currentUserKey); // Запам'ятовуємо останнього гравця
+      }
+    }
+
+    function loadProgress(userKey) {
+      const saved = localStorage.getItem(userKey);
       if (saved) { 
         userData = { ...userData, ...JSON.parse(saved) }; 
         userData.rebirths = userData.rebirths || 0; 
@@ -374,6 +404,53 @@
         return true; 
       }
       return false;
+    }
+
+    function loginOrRegister() {
+      const nick = document.getElementById('reg-nickname').value.trim();
+      const pass = document.getElementById('reg-password').value.trim();
+      
+      if (nick.length < 2 || pass.length < 2) { 
+        showNotification('Нік та пароль мають бути від 2 символів!', 'error'); 
+        return; 
+      }
+      
+      const saveKey = 'schoolClicker_user_' + nick;
+      const existingDataStr = localStorage.getItem(saveKey);
+
+      if (existingDataStr) {
+        // Акаунт існує - пробуємо зайти
+        const existingData = JSON.parse(existingDataStr);
+        if (existingData.password === pass) {
+          // Пароль підійшов
+          currentUserKey = saveKey;
+          loadProgress(saveKey);
+          document.getElementById('auth-screen').style.display = 'none'; 
+          startGameUI();
+          playSound(sfxSuccess);
+        } else {
+          // Пароль НЕ підійшов
+          showNotification('Цей нікнейм вже зайнятий або пароль невірний!', 'error');
+        }
+      } else {
+        // Акаунта немає - створюємо новий
+        currentUserKey = saveKey;
+        userData.username = nick; 
+        userData.password = pass; 
+        userData.avatarType = tempRegAvatarType; 
+        userData.avatarData = tempRegAvatarData;
+        userData.energy = MAX_ENERGY; 
+        userData.cooldownUntil = 0;
+        saveProgress(); 
+        document.getElementById('auth-screen').style.display = 'none'; 
+        startGameUI();
+        playSound(sfxSuccess);
+      }
+    }
+
+    function logoutUser() {
+      localStorage.removeItem('schoolClicker_lastUser');
+      location.reload(); // Перезавантажуємо сторінку для виходу
     }
 
     function checkStreak() {
@@ -440,7 +517,7 @@
       }
     }, 1000);
 
-    // --- АВТОРИЗАЦІЯ ТА ФОТО ---
+    // --- ФОТО ТА НАЛАШТУВАННЯ ---
     function handleFileUpload(event, source) {
       const file = event.target.files[0];
       if (file) {
@@ -467,7 +544,6 @@
       playSound(sfxTap);
     }
     
-    // Нова функція: змінити аватар на емодзі з налаштувань
     function changeSettingsAvatar(type, data) {
       userData.avatarType = type;
       userData.avatarData = data;
@@ -476,21 +552,6 @@
       saveProgress();
       playSound(sfxTap);
       showNotification('Аватар змінено!', 'success');
-    }
-
-    function registerUser() {
-      const nick = document.getElementById('reg-nickname').value.trim();
-      if (nick.length < 2) { showNotification('Нікнейм від 2 символів!', 'error'); return; }
-      userData.username = nick; userData.avatarType = tempRegAvatarType; userData.avatarData = tempRegAvatarData;
-      userData.energy = MAX_ENERGY; userData.cooldownUntil = 0;
-      saveProgress(); document.getElementById('auth-screen').style.display = 'none'; startGameUI();
-      playSound(sfxSuccess);
-    }
-
-    function saveSettings() {
-      const nick = document.getElementById('settings-nickname').value.trim();
-      if (nick.length >= 2) { userData.username = nick; document.getElementById("ui-nickname").innerText = userData.username; }
-      saveProgress(); checkAdminStatus(); showNotification('Збережено!', 'success');
     }
 
     // --- ІНТЕРФЕЙС ---
@@ -578,13 +639,11 @@
     function startGameUI() {
       document.getElementById("ui-nickname").innerText = userData.username;
       updateGlobalAvatar(); checkStreak(); checkAdminStatus(); updateScoreUI(); updateRebirthUI(); updateEnergyUI();
-      document.getElementById("settings-nickname").value = userData.username;
       renderAvatarPreview('settings-avatar-preview', userData.avatarType, userData.avatarData);
       
       applyCurrentSkin();
       
       renderShop(); document.getElementById("app").style.display = "flex"; document.getElementById("global-header").style.display = "flex";
-      playSound(sfxSuccess);
     }
 
     // --- ФУНКЦІЇ АДМІНА ---
@@ -752,8 +811,14 @@
     window.onload = function() {
       setTimeout(() => {
         document.getElementById("loader").style.display = "none";
-        if (loadProgress() && userData.username !== "") startGameUI();
-        else document.getElementById("auth-screen").style.display = "flex";
+        
+        const lastUser = localStorage.getItem('schoolClicker_lastUser');
+        if (lastUser && loadProgress(lastUser)) {
+          currentUserKey = lastUser;
+          startGameUI();
+        } else {
+          document.getElementById("auth-screen").style.display = "flex";
+        }
       }, 1500); 
     };
   </script>
