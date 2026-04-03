@@ -227,11 +227,10 @@
     <div id="updates-screen" class="screen">
       <div class="screen-header">Оновлення</div>
       <div class="update-card" style="border-color: #69f0ae;">
-        <div class="update-version"><span style="color:#69f0ae;">v2.7 - Акаунти та Енергія</span></div>
-        <div class="update-desc">Додано систему повноцінних локальних акаунтів з паролями. Баланс енергії вирівняно (відновлення 1 од./сек).</div>
+        <div class="update-version"><span style="color:#69f0ae;">v2.8 - Адмін-Захист</span></div>
+        <div class="update-desc">Створено жорстку прив'язку пароля (26072013) до акаунту творця (Ole_Kon) та заблоковано зміну нікнейму на адмінський у налаштуваннях.</div>
       </div>
-      <div class="update-card"><div class="update-version">v2.6 - Захист від читерів</div><div class="update-desc">Додано енергію на 10,000 тапів.</div></div>
-      <div class="update-card"><div class="update-version">v2.5 - Фікс Перероджень</div><div class="update-desc">При переродженні магазин і монети чесно згорають.</div></div>
+      <div class="update-card"><div class="update-version">v2.7 - Акаунти та Енергія</div><div class="update-desc">Додано систему локальних акаунтів з паролями. Баланс енергії вирівняно (відновлення 1 од./сек).</div></div>
     </div>
 
     <div id="bonus-screen" class="screen">
@@ -269,6 +268,8 @@
           <input type="file" accept="image/*" onchange="handleFileUpload(event, 'settings')">
         </label>
         
+        <input type="text" id="settings-nickname" class="auth-input" placeholder="Новий нікнейм" maxlength="12">
+        <button class="auth-btn" style="padding: 10px 20px; font-size: 14px;" onclick="saveSettings()">Зберегти зміни</button>
         <button class="logout-btn" onclick="logoutUser()">🚪 Вийти з акаунта</button>
       </div>
     </div>
@@ -332,7 +333,7 @@
     }
 
     // --- ДАНІ ГРАВЦЯ ---
-    let currentUserKey = ''; // Ключ для збереження конкретного юзера
+    let currentUserKey = ''; 
 
     let userData = {
       username: "", password: "", avatarType: "emoji", avatarData: "😎", score: 0,
@@ -348,7 +349,7 @@
     let tempRegAvatarType = "emoji";
     let tempRegAvatarData = "😎";
 
-    // --- БАЗА ТОВАРІВ (13 ПРЕДМЕТІВ) ---
+    // --- БАЗА ТОВАРІВ ---
     const subjectsList = [
       { id: 'music', name: "Музика", price: 0 }, { id: 'art', name: "Малювання", price: 50 },
       { id: 'tech', name: "Технології", price: 100 }, { id: 'physics', name: "Фізика", price: 250 },
@@ -359,7 +360,6 @@
       { id: 'it', name: "ІНФОРМАТИКА", price: 20000 }
     ];
 
-    // --- БАЗА КОЛЬОРІВ (13 КОЛЬОРІВ) ---
     const colorsList = [
       { id: 'default', name: 'Стандарт', price: 0, bg: 'linear-gradient(145deg, #ffb74d, #f57c00)', edge: '#b26a00', glow: 'rgba(255, 152, 0, 0.3)' },
       { id: 'neon', name: 'Неон', price: 200, bg: 'linear-gradient(145deg, #ff00ff, #00ffff)', edge: '#880088', glow: 'rgba(255, 0, 255, 0.5)' },
@@ -386,11 +386,11 @@
       return num.toLocaleString('en-US').replace(/,/g, ' '); 
     }
 
-    // --- СИСТЕМА ЗБЕРЕЖЕННЯ ТА АВТОРИЗАЦІЇ (ОНОВЛЕНО) ---
+    // --- СИСТЕМА ЗБЕРЕЖЕННЯ ---
     function saveProgress() { 
       if (currentUserKey) {
         localStorage.setItem(currentUserKey, JSON.stringify(userData)); 
-        localStorage.setItem('schoolClicker_lastUser', currentUserKey); // Запам'ятовуємо останнього гравця
+        localStorage.setItem('schoolClicker_lastUser', currentUserKey);
       }
     }
 
@@ -414,26 +414,29 @@
         showNotification('Нік та пароль мають бути від 2 символів!', 'error'); 
         return; 
       }
+
+      // --- ХАРДКОД ЗАХИСТУ АДМІНА ---
+      if (nick === 'Ole_Kon' && pass !== '26072013') {
+        showNotification('Недоступно! Невірний пароль адміністратора.', 'error');
+        return;
+      }
+      // ------------------------------
       
       const saveKey = 'schoolClicker_user_' + nick;
       const existingDataStr = localStorage.getItem(saveKey);
 
       if (existingDataStr) {
-        // Акаунт існує - пробуємо зайти
         const existingData = JSON.parse(existingDataStr);
         if (existingData.password === pass) {
-          // Пароль підійшов
           currentUserKey = saveKey;
           loadProgress(saveKey);
           document.getElementById('auth-screen').style.display = 'none'; 
           startGameUI();
           playSound(sfxSuccess);
         } else {
-          // Пароль НЕ підійшов
           showNotification('Цей нікнейм вже зайнятий або пароль невірний!', 'error');
         }
       } else {
-        // Акаунта немає - створюємо новий
         currentUserKey = saveKey;
         userData.username = nick; 
         userData.password = pass; 
@@ -450,7 +453,7 @@
 
     function logoutUser() {
       localStorage.removeItem('schoolClicker_lastUser');
-      location.reload(); // Перезавантажуємо сторінку для виходу
+      location.reload(); 
     }
 
     function checkStreak() {
@@ -504,7 +507,6 @@
       }
     }
 
-    // Відновлення енергії кожну секунду (1 в секунду)
     setInterval(() => {
       const now = Date.now();
       if (now > userData.cooldownUntil) {
@@ -552,6 +554,21 @@
       saveProgress();
       playSound(sfxTap);
       showNotification('Аватар змінено!', 'success');
+    }
+
+    function saveSettings() {
+      const nick = document.getElementById('settings-nickname').value.trim();
+      if (nick.length >= 2) { 
+        // ЗАХИСТ ВІД ЗМІНИ ІМЕНІ НА АДМІНСЬКЕ
+        if (nick === 'Ole_Kon' && userData.username !== 'Ole_Kon') {
+           showNotification('Ви не можете взяти нікнейм адміністратора!', 'error');
+           return;
+        }
+        
+        userData.username = nick; 
+        document.getElementById("ui-nickname").innerText = userData.username; 
+      }
+      saveProgress(); checkAdminStatus(); showNotification('Збережено!', 'success');
     }
 
     // --- ІНТЕРФЕЙС ---
@@ -639,6 +656,7 @@
     function startGameUI() {
       document.getElementById("ui-nickname").innerText = userData.username;
       updateGlobalAvatar(); checkStreak(); checkAdminStatus(); updateScoreUI(); updateRebirthUI(); updateEnergyUI();
+      document.getElementById("settings-nickname").value = userData.username;
       renderAvatarPreview('settings-avatar-preview', userData.avatarType, userData.avatarData);
       
       applyCurrentSkin();
