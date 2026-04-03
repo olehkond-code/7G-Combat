@@ -59,6 +59,7 @@
     
     .auth-input { background: #222; border: 2px solid #555; color: white; padding: 12px; border-radius: 10px; font-size: 16px; outline: none; text-align: center; width: 100%; max-width: 280px; margin-bottom: 10px; }
     .auth-input:focus { border-color: #ff9800; }
+    select.auth-input option { background: #222; color: #fff; } /* Стиль для меню вибору в адмінці */
     .avatars-grid { display: flex; gap: 10px; justify-content: center; margin-bottom: 15px; flex-wrap: wrap; max-width: 280px; }
     .avatar-option { width: 45px; height: 45px; display: flex; justify-content: center; align-items: center; font-size: 28px; background: #222; border-radius: 50%; cursor: pointer; border: 2px solid transparent; background-size: cover; background-position: center; transition: 0.2s;}
     .avatar-option.selected { border-color: #69f0ae; box-shadow: 0 0 10px #69f0ae; transform: scale(1.1); }
@@ -126,7 +127,7 @@
     .streak-desc { font-size: 13px; color: #888; margin-top: 15px; }
     @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
 
-    /* РЕЙТИНГ (ДОДАНО ДЛЯ FIREBASE) */
+    /* РЕЙТИНГ (FIREBASE) */
     .rating-list { display: flex; flex-direction: column; gap: 10px; width: 100%; }
     .rating-item { background: #2a2a2a; padding: 12px 15px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #444; }
     .rating-item.top-3 { border-color: #ff9800; background: #3d2500; }
@@ -281,23 +282,41 @@
     <div id="admin-screen" class="screen">
       <div class="screen-header" style="color: #d500f9;">God Mode ⚡</div>
       <div class="block-title" style="text-align:center; color: #fff;">Привіт, Творець!</div>
-      
-      <button class="admin-btn" onclick="adminResetCooldown()" style="border-color: #ffeb3b; color: #ffeb3b; text-shadow: 0 0 5px #ffeb3b;">⚡ Відновити енергію</button>
+
+      <div class="admin-promo-box" style="border-color: #ff5252;">
+        <div style="color: #ff5252; font-weight: bold; font-size: 14px;">🔨 Управління гравцями (Онлайн)</div>
+        <input type="text" id="admin-target-nick" class="auth-input" placeholder="Введи нік гравця..." style="width: 100%; margin-bottom: 5px; padding: 8px;">
+        
+        <div style="display: flex; gap: 5px; width: 100%; margin-bottom: 10px;">
+          <button class="admin-btn" onclick="adminBanUser()" style="margin:0; padding:10px; font-size:14px; border-color:#ff5252; color:#ff5252;">Забанити</button>
+          <button class="admin-btn" onclick="adminUnbanUser()" style="margin:0; padding:10px; font-size:14px; border-color:#69f0ae; color:#69f0ae;">Розбанити</button>
+        </div>
+
+        <select id="admin-reward-type" class="auth-input" style="width: 100%; margin-bottom: 5px; padding: 8px;">
+          <option value="coins">Монети 💰</option>
+          <option value="streak">Дні активу 🔥</option>
+          <option value="rebirths">Переродження 🌟</option>
+          <option value="energy">Енергія ⚡</option>
+        </select>
+        <input type="number" id="admin-reward-val" class="auth-input" placeholder="Кількість..." style="width: 100%; margin-bottom: 5px; padding: 8px;">
+        <button class="admin-btn" onclick="adminSendReward()" style="margin-bottom: 0; padding: 10px; font-size: 14px;">Відправити гравцю 🚀</button>
+      </div>
+      <button class="admin-btn" onclick="adminResetCooldown()" style="border-color: #ffeb3b; color: #ffeb3b; text-shadow: 0 0 5px #ffeb3b;">⚡ Відновити енергію СОБІ</button>
 
       <div class="admin-promo-box">
-        <div style="color: #d500f9; font-weight: bold; font-size: 14px;">🌟 Накрутка Перероджень</div>
+        <div style="color: #d500f9; font-weight: bold; font-size: 14px;">🌟 Накрутка Перероджень (Собі)</div>
         <input type="number" id="admin-rebirth-val" class="auth-input" placeholder="Кількість..." style="width: 100%; margin-bottom: 5px; padding: 8px;">
         <button class="admin-btn" onclick="adminGiveCustomRebirths()" style="margin-bottom: 0; padding: 10px; font-size: 14px;">Видати переродження</button>
       </div>
 
       <div class="admin-promo-box">
-        <div style="color: #d500f9; font-weight: bold; font-size: 14px;">💰 Накрутка монет</div>
+        <div style="color: #d500f9; font-weight: bold; font-size: 14px;">💰 Накрутка монет (Собі)</div>
         <input type="number" id="admin-coin-val" class="auth-input" placeholder="Введіть суму..." style="width: 100%; margin-bottom: 5px; padding: 8px;">
         <button class="admin-btn" onclick="adminGiveCustomCoins()" style="margin-bottom: 0; padding: 10px; font-size: 14px;">Видати монети</button>
       </div>
 
       <div class="admin-promo-box">
-        <div style="color: #d500f9; font-weight: bold; font-size: 14px;">🔥 Накрутка активу (днів)</div>
+        <div style="color: #d500f9; font-weight: bold; font-size: 14px;">🔥 Накрутка активу (Собі)</div>
         <input type="number" id="admin-streak-val" class="auth-input" placeholder="Кількість днів..." style="width: 100%; margin-bottom: 5px; padding: 8px;">
         <button class="admin-btn" onclick="adminGiveCustomStreak()" style="margin-bottom: 0; padding: 10px; font-size: 14px;">Видати актив</button>
       </div>
@@ -324,7 +343,7 @@
   </div>
 
   <script>
-    // --- ПІДКЛЮЧЕННЯ FIREBASE ТА КЛЮЧІ (ДОДАНО) ---
+    // --- ПІДКЛЮЧЕННЯ FIREBASE ---
     const firebaseConfig = {
       apiKey: "AIzaSyAOBFEm3wlyIWzk3aAV2vUYW9OsJq8tCyQ",
       authDomain: "g-combat-rating.firebaseapp.com",
@@ -339,7 +358,7 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // --- ФУНКЦІЇ FIREBASE ДЛЯ РЕЙТИНГУ (ДОДАНО) ---
+    // --- ФУНКЦІЇ FIREBASE (РЕЙТИНГ) ---
     function sendScoreToFirebase() {
         if (!currentUserKey) return;
         db.ref('leaderboard/' + userData.username).set({
@@ -451,7 +470,7 @@
       if (currentUserKey) {
         localStorage.setItem(currentUserKey, JSON.stringify(userData)); 
         localStorage.setItem('schoolClicker_lastUser', currentUserKey);
-        sendScoreToFirebase(); // <--- ДОДАНО ОНОВЛЕННЯ БАЗИ ТУТ
+        sendScoreToFirebase(); 
       }
     }
 
@@ -704,9 +723,76 @@
       applyCurrentSkin();
       
       renderShop(); document.getElementById("app").style.display = "flex"; document.getElementById("global-header").style.display = "flex";
+
+      // --- ПЕРЕВІРКА НА БАН (FIREBASE) ---
+      db.ref('banned/' + userData.username).on('value', (snapshot) => {
+        if (snapshot.val() === true) {
+          document.body.innerHTML = '<div style="display:flex; justify-content:center; align-items:center; height:100vh; background:#111; flex-direction:column;"><h1 style="color:#ff5252; font-size:40px; margin:0;">🔨</h1><h2 style="color:#ff5252;">ВИ ЗАБАНЕНІ АДМІНІСТРАТОРОМ</h2><p style="color:#888;">Доступ до гри закрито.</p></div>';
+        }
+      });
+
+      // --- ПРИЙОМ ПОСИЛОК ВІД АДМІНА (FIREBASE) ---
+      db.ref('rewards/' + userData.username).on('child_added', (snapshot) => {
+        const reward = snapshot.val();
+        const rewardKey = snapshot.key;
+
+        if (reward.type === 'coins') {
+          userData.score += reward.amount;
+          showNotification(`Адмін видав вам ${formatScore(reward.amount)} монет! 💰`, 'success');
+        } else if (reward.type === 'streak') {
+          userData.streak += reward.amount;
+          document.getElementById('ui-streak').innerText = userData.streak;
+          document.getElementById('header-streak').innerText = userData.streak;
+          showNotification(`Адмін видав вам ${reward.amount} днів активу! 🔥`, 'success');
+        } else if (reward.type === 'rebirths') {
+          userData.rebirths += reward.amount;
+          calculateRebirthUnlocks(); updateRebirthUI(); renderShop();
+          showNotification(`Адмін видав вам ${reward.amount} перероджень! 🌟`, 'success');
+        } else if (reward.type === 'energy') {
+          userData.cooldownUntil = 0;
+          userData.energy = Math.min(MAX_ENERGY, userData.energy + reward.amount);
+          showNotification(`Адмін відновив вам ${reward.amount} енергії! ⚡`, 'success');
+        }
+
+        updateScoreUI(); updateEnergyUI(); saveProgress();
+        // Видаляємо посилку з бази, щоб не отримувати її двічі
+        db.ref('rewards/' + userData.username + '/' + rewardKey).remove();
+      });
     }
 
-    // --- ФУНКЦІЇ АДМІНА ---
+    // --- ФУНКЦІЇ АДМІНА (ОНЛАЙН) ---
+    function adminBanUser() {
+      const nick = document.getElementById('admin-target-nick').value.trim();
+      if(!nick) return showNotification('Введіть нік гравця!', 'error');
+      if(nick === 'Ole_Kon') return showNotification('Не можна забанити себе!', 'error');
+      
+      db.ref('banned/' + nick).set(true);
+      showNotification(`Гравця ${nick} забанено! 🔨`, 'admin');
+    }
+
+    function adminUnbanUser() {
+      const nick = document.getElementById('admin-target-nick').value.trim();
+      if(!nick) return showNotification('Введіть нік гравця!', 'error');
+      
+      db.ref('banned/' + nick).remove();
+      showNotification(`Гравця ${nick} розбанено! 🕊️`, 'admin');
+    }
+
+    function adminSendReward() {
+      const nick = document.getElementById('admin-target-nick').value.trim();
+      const type = document.getElementById('admin-reward-type').value;
+      const val = parseInt(document.getElementById('admin-reward-val').value);
+
+      if(!nick) return showNotification('Введіть нік гравця!', 'error');
+      if(isNaN(val) || val <= 0) return showNotification('Введіть правильну кількість!', 'error');
+
+      // Відправляємо посилку у Firebase
+      db.ref('rewards/' + nick).push({ type: type, amount: val });
+      showNotification(`Відправлено ${val} (${type}) гравцю ${nick}! 🚀`, 'admin');
+      document.getElementById('admin-reward-val').value = '';
+    }
+
+    // --- ФУНКЦІЇ АДМІНА (ЛОКАЛЬНІ) ---
     function adminResetCooldown() {
       userData.cooldownUntil = 0;
       userData.energy = MAX_ENERGY;
@@ -807,7 +893,6 @@
       document.getElementById(navId).classList.add('active');
       document.getElementById("big-score").style.display = screenId === 'game-screen' ? 'block' : 'none';
       
-      // ДОДАНО: Коли гравець заходить у вкладку Топ, база оновлюється!
       if (screenId === 'rating-screen') loadLeaderboard();
 
       playSound(sfxTap);
