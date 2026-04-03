@@ -59,7 +59,7 @@
     
     .auth-input { background: #222; border: 2px solid #555; color: white; padding: 12px; border-radius: 10px; font-size: 16px; outline: none; text-align: center; width: 100%; max-width: 280px; margin-bottom: 10px; }
     .auth-input:focus { border-color: #ff9800; }
-    select.auth-input option { background: #222; color: #fff; } /* Стиль для меню вибору в адмінці */
+    select.auth-input option { background: #222; color: #fff; }
     .avatars-grid { display: flex; gap: 10px; justify-content: center; margin-bottom: 15px; flex-wrap: wrap; max-width: 280px; }
     .avatar-option { width: 45px; height: 45px; display: flex; justify-content: center; align-items: center; font-size: 28px; background: #222; border-radius: 50%; cursor: pointer; border: 2px solid transparent; background-size: cover; background-position: center; transition: 0.2s;}
     .avatar-option.selected { border-color: #69f0ae; box-shadow: 0 0 10px #69f0ae; transform: scale(1.1); }
@@ -132,7 +132,9 @@
     .rating-item { background: #2a2a2a; padding: 12px 15px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #444; }
     .rating-item.top-3 { border-color: #ff9800; background: #3d2500; }
     .rank-num { font-weight: 900; color: #ff9800; font-size: 18px; width: 30px; }
-    .rank-name { flex: 1; font-weight: bold; font-size: 16px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-right: 10px; }
+    .rank-info { display: flex; flex-direction: column; flex: 1; overflow: hidden; margin-right: 10px; }
+    .rank-name { font-weight: bold; font-size: 16px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .rank-stats { font-size: 12px; color: #aaa; display: flex; gap: 8px; margin-top: 3px; }
     .rank-score { color: #ffeb3b; font-weight: bold; flex-shrink: 0; }
     .rank-avatar { width: 30px; height: 30px; border-radius: 50%; border: 1px solid #ff9800; display: flex; justify-content: center; align-items: center; font-size: 16px; background-color: #111; background-size: cover; background-position: center; margin-right: 10px; flex-shrink: 0; }
 
@@ -301,6 +303,7 @@
         <input type="number" id="admin-reward-val" class="auth-input" placeholder="Кількість..." style="width: 100%; margin-bottom: 5px; padding: 8px;">
         <button class="admin-btn" onclick="adminSendReward()" style="margin-bottom: 0; padding: 10px; font-size: 14px;">Відправити гравцю 🚀</button>
       </div>
+      
       <button class="admin-btn" onclick="adminResetCooldown()" style="border-color: #ffeb3b; color: #ffeb3b; text-shadow: 0 0 5px #ffeb3b;">⚡ Відновити енергію СОБІ</button>
 
       <div class="admin-promo-box">
@@ -364,6 +367,7 @@
         db.ref('leaderboard/' + userData.username).set({
             score: userData.score,
             rebirths: userData.rebirths,
+            streak: userData.streak,
             avatarType: userData.avatarType,
             avatarData: userData.avatarData
         });
@@ -390,7 +394,10 @@
                 item.innerHTML = `
                     <div class="rank-num">#${index + 1}</div>
                     ${avatarHtml}
-                    <div class="rank-name">${player.name}</div>
+                    <div class="rank-info">
+                        <div class="rank-name">${player.name}</div>
+                        <div class="rank-stats">🌟 ${player.rebirths || 0} &nbsp;|&nbsp; 🔥 ${player.streak || 1} дн.</div>
+                    </div>
                     <div class="rank-score">💰 ${formatScore(player.score)}</div>
                 `;
                 container.appendChild(item);
@@ -479,6 +486,7 @@
       if (saved) { 
         userData = { ...userData, ...JSON.parse(saved) }; 
         userData.rebirths = userData.rebirths || 0; 
+        userData.streak = userData.streak || 1;
         if (userData.energy === undefined) userData.energy = MAX_ENERGY;
         if (userData.cooldownUntil === undefined) userData.cooldownUntil = 0;
         return true; 
@@ -727,7 +735,7 @@
       // --- ПЕРЕВІРКА НА БАН (FIREBASE) ---
       db.ref('banned/' + userData.username).on('value', (snapshot) => {
         if (snapshot.val() === true) {
-          document.body.innerHTML = '<div style="display:flex; justify-content:center; align-items:center; height:100vh; background:#111; flex-direction:column;"><h1 style="color:#ff5252; font-size:40px; margin:0;">🔨</h1><h2 style="color:#ff5252;">ВИ ЗАБАНЕНІ АДМІНІСТРАТОРОМ</h2><p style="color:#888;">Доступ до гри закрито.</p></div>';
+          document.body.innerHTML = '<div style="display:flex; justify-content:center; align-items:center; height:100vh; background:#111; flex-direction:column;"><h1 style="color:#ff5252; font-size:40px; margin:0;">🔨</h1><h2 style="color:#ff5252; text-align:center;">ВИ ЗАБАНЕНІ АДМІНІСТРАТОРОМ</h2><p style="color:#888;">Доступ до гри закрито.</p></div>';
         }
       });
 
@@ -755,8 +763,7 @@
         }
 
         updateScoreUI(); updateEnergyUI(); saveProgress();
-        // Видаляємо посилку з бази, щоб не отримувати її двічі
-        db.ref('rewards/' + userData.username + '/' + rewardKey).remove();
+        db.ref('rewards/' + userData.username + '/' + rewardKey).remove(); // Видаляємо, щоб не отримати двічі
       });
     }
 
@@ -786,13 +793,23 @@
       if(!nick) return showNotification('Введіть нік гравця!', 'error');
       if(isNaN(val) || val <= 0) return showNotification('Введіть правильну кількість!', 'error');
 
-      // Відправляємо посилку у Firebase
+      // ОНОВЛЮЄМО БАЗУ ОДРАЗУ, ЩОБ БУЛО ВИДНО В РЕЙТИНГУ (навіть якщо гравець офлайн)
+      db.ref('leaderboard/' + nick).once('value', snapshot => {
+        if(snapshot.exists()) {
+          const p = snapshot.val();
+          if(type === 'coins') db.ref('leaderboard/' + nick + '/score').set((p.score || 0) + val);
+          if(type === 'rebirths') db.ref('leaderboard/' + nick + '/rebirths').set((p.rebirths || 0) + val);
+          if(type === 'streak') db.ref('leaderboard/' + nick + '/streak').set((p.streak || 1) + val);
+        }
+      });
+
+      // Відправляємо посилку у Firebase, щоб гравець отримав її на своєму телефоні, коли зайде
       db.ref('rewards/' + nick).push({ type: type, amount: val });
       showNotification(`Відправлено ${val} (${type}) гравцю ${nick}! 🚀`, 'admin');
       document.getElementById('admin-reward-val').value = '';
     }
 
-    // --- ФУНКЦІЇ АДМІНА (ЛОКАЛЬНІ) ---
+    // --- ФУНКЦІЇ АДМІНА (ЛОКАЛЬНІ - ДЛЯ СЕБЕ) ---
     function adminResetCooldown() {
       userData.cooldownUntil = 0;
       userData.energy = MAX_ENERGY;
