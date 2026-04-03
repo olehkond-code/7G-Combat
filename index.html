@@ -361,51 +361,6 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // --- ФУНКЦІЇ FIREBASE (РЕЙТИНГ) ---
-    function sendScoreToFirebase() {
-        if (!currentUserKey) return;
-        db.ref('leaderboard/' + userData.username).set({
-            score: userData.score,
-            rebirths: userData.rebirths,
-            streak: userData.streak,
-            avatarType: userData.avatarType,
-            avatarData: userData.avatarData
-        });
-    }
-
-    function loadLeaderboard() {
-        const container = document.getElementById('rating-container');
-        db.ref('leaderboard').orderByChild('score').limitToLast(20).once('value', (snapshot) => {
-            container.innerHTML = '';
-            let list = [];
-            snapshot.forEach((child) => { list.push({ name: child.key, ...child.val() }); });
-            list.reverse();
-            list.forEach((player, index) => {
-                const item = document.createElement('div');
-                item.className = `rating-item ${index < 3 ? 'top-3' : ''}`;
-                
-                let avatarHtml = '';
-                if (player.avatarType === 'image') {
-                    avatarHtml = `<div class="rank-avatar" style="background-image: url('${player.avatarData}')"></div>`;
-                } else {
-                    avatarHtml = `<div class="rank-avatar">${player.avatarData || '😎'}</div>`;
-                }
-
-                item.innerHTML = `
-                    <div class="rank-num">#${index + 1}</div>
-                    ${avatarHtml}
-                    <div class="rank-info">
-                        <div class="rank-name">${player.name}</div>
-                        <div class="rank-stats">🌟 ${player.rebirths || 0} &nbsp;|&nbsp; 🔥 ${player.streak || 1} дн.</div>
-                    </div>
-                    <div class="rank-score">💰 ${formatScore(player.score)}</div>
-                `;
-                container.appendChild(item);
-            });
-        });
-    }
-
-
     // --- АУДІО (ЗВУКИ) ---
     const sfxTap = new Audio('tap.mp3');
     const sfxBuy = new Audio('buy.mp3');
@@ -472,11 +427,27 @@
       return num.toLocaleString('en-US').replace(/,/g, ' '); 
     }
 
-    // --- СИСТЕМА ЗБЕРЕЖЕННЯ ---
+    // --- СИСТЕМА ХМАРНОГО ЗБЕРЕЖЕННЯ (FIREBASE SYNC) ---
+    function sendScoreToFirebase() {
+        if (!currentUserKey) return;
+        // Оновлюємо публічний рейтинг
+        db.ref('leaderboard/' + userData.username).set({
+            score: userData.score,
+            rebirths: userData.rebirths,
+            streak: userData.streak,
+            avatarType: userData.avatarType,
+            avatarData: userData.avatarData
+        });
+    }
+
     function saveProgress() { 
       if (currentUserKey) {
         localStorage.setItem(currentUserKey, JSON.stringify(userData)); 
         localStorage.setItem('schoolClicker_lastUser', currentUserKey);
+        
+        // Зберігаємо ПОВНИЙ профіль гравця у хмару
+        db.ref('users/' + userData.username).set(userData);
+        
         sendScoreToFirebase(); 
       }
     }
@@ -508,33 +479,112 @@
         return;
       }
       
-      const saveKey = 'schoolClicker_user_' + nick;
-      const existingDataStr = localStorage.getItem(saveKey);
-
-      if (existingDataStr) {
-        const existingData = JSON.parse(existingDataStr);
-        if (existingData.password === pass) {
-          currentUserKey = saveKey;
-          loadProgress(saveKey);
+      document.getElementById('loader').style.display = 'flex';
+      
+      // Перевіряємо ХМАРУ замість локальної пам'яті
+      db.ref('users/' + nick).once('value', (snapshot) => {
+        document.getElementById('loader').style.display = 'none';
+        
+        if (snapshot.exists()) {
+          // Користувач є в базі!
+          const cloudData = snapshot.val();
+          if (cloudData.password === pass) {
+            // Пароль правильний - синхронізуємо дані
+            userData = { ...userData, ...cloudData };
+            currentUserKey = 'schoolClicker_user_' + nick;
+            localStorage.setItem(currentUserKey, JSON.stringify(userData));
+            localStorage.setItem('schoolClicker_lastUser', currentUserKey);
+            document.getElementById('auth-screen').style.display = 'none'; 
+            startGameUI();
+            playSound(sfxSuccess);
+            showNotification('Дані успішно синхронізовано!', 'success');
+          } else {
+            showNotification('Цей нікнейм вже зайнятий або пароль невірний!', 'error');
+          }
+        } else {
+          // Новий користувач
+          currentUserKey = 'schoolClicker_user_' + nick;
+          userData.username = nick; 
+          userData.password = pass; 
+          userData.avatarType = tempRegAvatarType; 
+          userData.avatarData = tempRegAvatarData;
+          userData.energy = MAX_ENERGY; 
+          userData.cooldownUntil = 0;
+          saveProgress(); 
           document.getElementById('auth-screen').style.display = 'none'; 
           startGameUI();
           playSound(sfxSuccess);
-        } else {
-          showNotification('Цей нікнейм вже зайнятий або пароль невірний!', 'error');
         }
-      } else {
-        currentUserKey = saveKey;
-        userData.username = nick; 
-        userData.password = pass; 
-        userData.avatarType = tempRegAvatarType; 
-        userData.avatarData = tempRegAvatarData;
-        userData.energy = MAX_ENERGY; 
-        userData.cooldownUntil = 0;
-        saveProgress(); 
-        document.getElementById('auth-screen').style.display = 'none'; 
-        startGameUI();
-        playSound(sfxSuccess);
+      });
+    }
+
+    // --- ЗАВАНТАЖЕННЯ ГРИ (ПЕРЕВІРКА ХМАРИ) ---
+    window.onload = function() {
+      const lastUser = localStorage.getItem('schoolClicker_lastUser');
+      if (lastUser) {
+        const savedStr = localStorage.getItem(lastUser);
+        if (savedStr) {
+           const tempUser = JSON.parse(savedStr);
+           
+           // Синхронізуємо з хмарою при вході!
+           db.ref('users/' + tempUser.username).once('value').then((snapshot) => {
+               document.getElementById("loader").style.display = "none";
+               if(snapshot.exists()) {
+                   userData = { ...userData, ...snapshot.val() };
+               } else {
+                   userData = { ...userData, ...tempUser };
+               }
+               currentUserKey = lastUser;
+               localStorage.setItem(currentUserKey, JSON.stringify(userData));
+               startGameUI();
+           }).catch((err) => {
+               // Якщо немає інтернету - граємо локально
+               document.getElementById("loader").style.display = "none";
+               userData = { ...userData, ...tempUser };
+               currentUserKey = lastUser;
+               startGameUI();
+           });
+           return; 
+        }
       }
+      
+      // Якщо немає збережень
+      setTimeout(() => {
+          document.getElementById("loader").style.display = "none";
+          document.getElementById("auth-screen").style.display = "flex";
+      }, 1500);
+    };
+
+    function loadLeaderboard() {
+        const container = document.getElementById('rating-container');
+        db.ref('leaderboard').orderByChild('score').limitToLast(20).once('value', (snapshot) => {
+            container.innerHTML = '';
+            let list = [];
+            snapshot.forEach((child) => { list.push({ name: child.key, ...child.val() }); });
+            list.reverse();
+            list.forEach((player, index) => {
+                const item = document.createElement('div');
+                item.className = `rating-item ${index < 3 ? 'top-3' : ''}`;
+                
+                let avatarHtml = '';
+                if (player.avatarType === 'image') {
+                    avatarHtml = `<div class="rank-avatar" style="background-image: url('${player.avatarData}')"></div>`;
+                } else {
+                    avatarHtml = `<div class="rank-avatar">${player.avatarData || '😎'}</div>`;
+                }
+
+                item.innerHTML = `
+                    <div class="rank-num">#${index + 1}</div>
+                    ${avatarHtml}
+                    <div class="rank-info">
+                        <div class="rank-name">${player.name}</div>
+                        <div class="rank-stats">🌟 ${player.rebirths || 0} &nbsp;|&nbsp; 🔥 ${player.streak || 1} дн.</div>
+                    </div>
+                    <div class="rank-score">💰 ${formatScore(player.score)}</div>
+                `;
+                container.appendChild(item);
+            });
+        });
     }
 
     function logoutUser() {
@@ -618,7 +668,6 @@
             showNotification('Фото завантажено!', 'success');
           } else if (source === 'settings') {
             userData.avatarType = 'image'; userData.avatarData = e.target.result;
-            renderAvatarPreview('settings-avatar-preview', userData.avatarType, userData.avatarData);
             updateGlobalAvatar(); saveProgress(); showNotification('Аватар змінено!', 'success');
           }
         };
@@ -635,7 +684,6 @@
     function changeSettingsAvatar(type, data) {
       userData.avatarType = type;
       userData.avatarData = data;
-      renderAvatarPreview('settings-avatar-preview', userData.avatarType, userData.avatarData);
       updateGlobalAvatar();
       saveProgress();
       playSound(sfxTap);
@@ -649,7 +697,10 @@
       else { el.style.backgroundImage = 'none'; el.innerHTML = data; }
     }
     
-    function updateGlobalAvatar() { renderAvatarPreview('ui-avatar', userData.avatarType, userData.avatarData); }
+    function updateGlobalAvatar() { 
+      renderAvatarPreview('ui-avatar', userData.avatarType, userData.avatarData); 
+      renderAvatarPreview('settings-avatar-preview', userData.avatarType, userData.avatarData);
+    }
 
     function updateScoreUI() {
       const formattedScore = formatScore(userData.score);
@@ -803,7 +854,18 @@
         }
       });
 
-      // Відправляємо посилку у Firebase, щоб гравець отримав її на своєму телефоні, коли зайде
+      // ОНОВЛЮЄМО ХМАРНИЙ ПРОФІЛЬ ЮЗЕРА ОДРАЗУ
+      db.ref('users/' + nick).once('value', snapshot => {
+        if(snapshot.exists()) {
+          let u = snapshot.val();
+          if(type === 'coins') u.score += val;
+          if(type === 'streak') u.streak += val;
+          if(type === 'rebirths') { u.rebirths += val; }
+          db.ref('users/' + nick).set(u);
+        }
+      });
+
+      // Відправляємо посилку у Firebase, щоб гравець отримав повідомлення коли зайде
       db.ref('rewards/' + nick).push({ type: type, amount: val });
       showNotification(`Відправлено ${val} (${type}) гравцю ${nick}! 🚀`, 'admin');
       document.getElementById('admin-reward-val').value = '';
@@ -973,20 +1035,6 @@
         }
       } else { showNotification('Неправильний код!', 'error'); }
     }
-
-    window.onload = function() {
-      setTimeout(() => {
-        document.getElementById("loader").style.display = "none";
-        
-        const lastUser = localStorage.getItem('schoolClicker_lastUser');
-        if (lastUser && loadProgress(lastUser)) {
-          currentUserKey = lastUser;
-          startGameUI();
-        } else {
-          document.getElementById("auth-screen").style.display = "flex";
-        }
-      }, 1500); 
-    };
   </script>
 </body>
 </html>
