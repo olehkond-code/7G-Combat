@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>School Clicker Online</title>
+  <title>School Clicker</title>
 
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
@@ -125,7 +125,6 @@
     .streak-title { font-size: 18px; color: #aaa; margin-bottom: 5px; font-weight: bold; }
     .streak-count { font-size: 48px; font-weight: bold; color: #ff9800; text-shadow: 0 0 10px rgba(255,152,0,0.5); }
     .streak-desc { font-size: 13px; color: #888; margin-top: 15px; }
-    @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
 
     /* РЕЙТИНГ (FIREBASE) */
     .rating-list { display: flex; flex-direction: column; gap: 10px; width: 100%; }
@@ -137,6 +136,31 @@
     .rank-stats { font-size: 12px; color: #aaa; display: flex; gap: 8px; margin-top: 3px; }
     .rank-score { color: #ffeb3b; font-weight: bold; flex-shrink: 0; }
     .rank-avatar { width: 30px; height: 30px; border-radius: 50%; border: 1px solid #ff9800; display: flex; justify-content: center; align-items: center; font-size: 16px; background-color: #111; background-size: cover; background-position: center; margin-right: 10px; flex-shrink: 0; }
+
+    /* ЧАТ ТА ДРУЗІ */
+    .chat-tabs { display: flex; border-bottom: 2px solid #333; margin-bottom: 15px; }
+    .chat-tab { flex: 1; background: none; border: none; color: #777; padding: 10px; font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.2s; position: relative; }
+    .chat-tab.active { color: #ff9800; border-bottom: 2px solid #ff9800; }
+    .chat-tab-content { display: none; flex-direction: column; gap: 10px; }
+    .chat-tab-content.active { display: flex; }
+    .friend-item { background: #2a2a2a; padding: 10px 15px; border-radius: 10px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #444; cursor: pointer; }
+    .friend-item:active { background: #333; }
+    .friend-btn { background: #ff9800; border: none; color: #111; font-weight: bold; padding: 5px 15px; border-radius: 8px; cursor: pointer; }
+    .friend-btn-accept { background: #69f0ae; color: #003300; }
+    .friend-btn-reject { background: #ff5252; color: #330000; margin-left: 5px; }
+    .red-dot { position: absolute; top: -2px; right: -2px; width: 10px; height: 10px; background: #ff5252; border-radius: 50%; box-shadow: 0 0 5px #ff5252; display: none; }
+    .nav-red-dot { position: absolute; top: -5px; right: -5px; width: 10px; height: 10px; background: #ff5252; border-radius: 50%; box-shadow: 0 0 8px #ff5252; display: none; z-index: 10; }
+
+    #private-chat-window { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #111; z-index: 2000; flex-direction: column; }
+    .chat-header { padding: 15px 20px; background: #222; display: flex; align-items: center; border-bottom: 1px solid #333; gap: 15px;}
+    .chat-back-btn { background: none; border: none; color: #ff9800; font-size: 24px; cursor: pointer; }
+    .chat-messages { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
+    .msg-bubble { padding: 10px 15px; border-radius: 15px; max-width: 75%; word-wrap: break-word; font-size: 14px; }
+    .msg-my { background: linear-gradient(145deg, #ffb74d, #f57c00); color: #111; align-self: flex-end; border-bottom-right-radius: 2px; font-weight: 500; }
+    .msg-other { background: #333; color: #fff; align-self: flex-start; border-bottom-left-radius: 2px; border: 1px solid #444; }
+    .chat-input-area { padding: 10px; background: #222; display: flex; gap: 10px; border-top: 1px solid #333; padding-bottom: 25px;}
+    .chat-input { flex: 1; background: #111; border: 1px solid #555; color: white; padding: 12px; border-radius: 20px; outline: none; }
+    .chat-send-btn { background: #ff9800; border: none; border-radius: 50%; width: 45px; height: 45px; display: flex; justify-content: center; align-items: center; cursor: pointer; font-size: 20px;}
 
     /* НАЛАШТУВАННЯ */
     .settings-block { background: #222; border-radius: 10px; padding: 15px; display: flex; flex-direction: column; align-items: center; gap: 15px; }
@@ -150,8 +174,8 @@
 
     /* --- НИЖНЄ МЕНЮ --- */
     .bottom-nav { position: fixed; bottom: 0; left: 0; width: 100%; height: 65px; background: #1a1a1a; border-top: 1px solid #333; display: flex; justify-content: space-between; z-index: 1000; }
-    .nav-item { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #777; font-size: 9px; font-weight: bold; text-transform: uppercase; cursor: pointer; transition: 0.2s; }
-    .nav-icon { width: 20px; height: 20px; background-color: #777; border-radius: 4px; margin-bottom: 4px; transition: 0.2s; display: flex; justify-content: center; align-items: center; font-size: 14px;}
+    .nav-item { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #777; font-size: 8px; font-weight: bold; text-transform: uppercase; cursor: pointer; transition: 0.2s; position: relative; }
+    .nav-icon { width: 20px; height: 20px; background-color: #777; border-radius: 4px; margin-bottom: 4px; transition: 0.2s; display: flex; justify-content: center; align-items: center; font-size: 14px; position: relative;}
     .nav-item.active { color: #ff9800; }
     .nav-item.active .nav-icon { background-color: #ff9800; box-shadow: 0 0 10px rgba(255, 152, 0, 0.5); color: #111;}
     
@@ -239,6 +263,53 @@
         <div class="energy-bar"><div class="energy-fill" id="ui-energy-fill"></div></div>
         <div class="energy-text">⚡ <span id="ui-energy-val">10000</span> / 10000</div>
         <div class="energy-cooldown-text" id="ui-cooldown-timer">Відпочинок: 15:00</div>
+      </div>
+    </div>
+
+    <div id="chat-screen" class="screen">
+      <div class="screen-header">Спілкування</div>
+      
+      <div class="chat-tabs">
+        <button id="tab-btn-chats" class="chat-tab active" onclick="switchChatTab('chats')">Чати</button>
+        <button id="tab-btn-friends" class="chat-tab" onclick="switchChatTab('friends')">Друзі <div id="tab-friends-dot" class="red-dot"></div></button>
+      </div>
+
+      <div id="chat-tab-chats" class="chat-tab-content active">
+        <div id="no-friends-msg" style="text-align:center; margin-top:30px; display:none;">
+           <div style="font-size:50px; margin-bottom:10px;">😢</div>
+           <p style="color:#aaa; font-weight:bold; font-size:16px;">У тебе ще немає друзів</p>
+           <button class="auth-btn" style="margin-top:15px;" onclick="switchChatTab('friends')">Знайти друга</button>
+        </div>
+        <div id="chats-list-container" class="rating-list"></div>
+      </div>
+
+      <div id="chat-tab-friends" class="chat-tab-content">
+        <div class="promo-container">
+          <div style="font-weight:bold; color:#ff9800; text-align:center; margin-bottom:5px;">Додати друга</div>
+          <input type="text" id="add-friend-input" class="promo-input" placeholder="Введи нікнейм гравця...">
+          <button class="promo-btn" onclick="sendFriendRequest()">Відправити запит ✉️</button>
+        </div>
+
+        <div id="requests-section" style="display:none;">
+          <div class="block-title" style="color:#ff5252;">Вхідні запити:</div>
+          <div id="friend-requests-list" class="rating-list"></div>
+        </div>
+
+        <div class="block-title">Мої друзі:</div>
+        <div id="friends-list-container" class="rating-list"></div>
+      </div>
+    </div>
+
+    <div id="private-chat-window">
+      <div class="chat-header">
+        <button class="chat-back-btn" onclick="closePrivateChat()">⬅</button>
+        <div class="rank-avatar" id="private-chat-avatar" style="margin:0;"></div>
+        <div style="font-weight:bold; font-size:18px;" id="private-chat-name">Гравець</div>
+      </div>
+      <div class="chat-messages" id="private-chat-messages"></div>
+      <div class="chat-input-area">
+        <input type="text" id="private-chat-input" class="chat-input" placeholder="Повідомлення..." onkeypress="if(event.key === 'Enter') sendPrivateMessage()">
+        <button class="chat-send-btn" onclick="sendPrivateMessage()">➤</button>
       </div>
     </div>
 
@@ -338,7 +409,14 @@
       <div class="nav-item" id="nav-skins" onclick="switchTab('skins-screen', 'nav-skins')"><div class="nav-icon" style="border-radius:50%;">🛒</div><span>Шоп</span></div>
       <div class="nav-item" id="nav-rating" onclick="switchTab('rating-screen', 'nav-rating')"><div class="nav-icon" style="border-radius:50%;">🏆</div><span>Топ</span></div>
       <div class="nav-item" id="nav-active" onclick="switchTab('active-screen', 'nav-active')"><div class="nav-icon" style="clip-path: polygon(50% 0%, 100% 100%, 0% 100%);">🔥</div><span>Актив</span></div>
+      
       <div class="nav-item active" id="nav-game" onclick="switchTab('game-screen', 'nav-game')"><div class="nav-icon" style="border-radius:50%; background: radial-gradient(#ffb74d, #f57c00);"></div><span>Тап</span></div>
+      
+      <div class="nav-item" id="nav-chat" onclick="switchTab('chat-screen', 'nav-chat')">
+        <div class="nav-icon" style="border-radius:20%;">💬<div id="nav-chat-dot" class="nav-red-dot"></div></div>
+        <span>Чат</span>
+      </div>
+
       <div class="nav-item" id="nav-bonus" onclick="switchTab('bonus-screen', 'nav-bonus')"><div class="nav-icon" style="clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);">🎁</div><span>Бали</span></div>
       <div class="nav-item" id="nav-settings" onclick="switchTab('settings-screen', 'nav-settings')"><div class="nav-icon" style="border-radius: 30%;">⚙️</div><span>Налашт.</span></div>
       <div class="nav-item" id="nav-admin" onclick="switchTab('admin-screen', 'nav-admin')"><div class="nav-icon" style="border-radius: 10%;">⚡</div><span>Адмін</span></div>
@@ -390,6 +468,9 @@
     let tempRegAvatarType = "emoji";
     let tempRegAvatarData = "😎";
 
+    let currentChatWith = null; // З ким зараз відкритий чат
+    let cachedUsers = {}; // Кеш для аватарок друзів
+
     // --- БАЗА ТОВАРІВ ---
     const subjectsList = [
       { id: 'music', name: "Музика", price: 0 }, { id: 'art', name: "Малювання", price: 50 },
@@ -419,7 +500,6 @@
 
     const rebirthCosts = [1000, 5000, 15000, 50000, 150000, 500000, 1000000, 2500000, 5000000, 10000000, 25000000, 50000000];
 
-    // --- ФОРМАТУВАННЯ ЧИСЕЛ ---
     function formatScore(num) {
       if (num >= 1e12) return (num / 1e12).toFixed(2).replace(/\.00$/, '') + 'T';
       if (num >= 1e9) return (num / 1e9).toFixed(2).replace(/\.00$/, '') + 'B';
@@ -427,16 +507,12 @@
       return num.toLocaleString('en-US').replace(/,/g, ' '); 
     }
 
-    // --- СИСТЕМА ХМАРНОГО ЗБЕРЕЖЕННЯ (FIREBASE SYNC) ---
+    // --- FIREBASE SYNC ---
     function sendScoreToFirebase() {
         if (!currentUserKey) return;
-        // Оновлюємо публічний рейтинг
         db.ref('leaderboard/' + userData.username).set({
-            score: userData.score,
-            rebirths: userData.rebirths,
-            streak: userData.streak,
-            avatarType: userData.avatarType,
-            avatarData: userData.avatarData
+            score: userData.score, rebirths: userData.rebirths, streak: userData.streak,
+            avatarType: userData.avatarType, avatarData: userData.avatarData
         });
     }
 
@@ -444,117 +520,268 @@
       if (currentUserKey) {
         localStorage.setItem(currentUserKey, JSON.stringify(userData)); 
         localStorage.setItem('schoolClicker_lastUser', currentUserKey);
-        
-        // Зберігаємо ПОВНИЙ профіль гравця у хмару
         db.ref('users/' + userData.username).set(userData);
-        
         sendScoreToFirebase(); 
       }
-    }
-
-    function loadProgress(userKey) {
-      const saved = localStorage.getItem(userKey);
-      if (saved) { 
-        userData = { ...userData, ...JSON.parse(saved) }; 
-        userData.rebirths = userData.rebirths || 0; 
-        userData.streak = userData.streak || 1;
-        if (userData.energy === undefined) userData.energy = MAX_ENERGY;
-        if (userData.cooldownUntil === undefined) userData.cooldownUntil = 0;
-        return true; 
-      }
-      return false;
     }
 
     function loginOrRegister() {
       const nick = document.getElementById('reg-nickname').value.trim();
       const pass = document.getElementById('reg-password').value.trim();
       
-      if (nick.length < 2 || pass.length < 2) { 
-        showNotification('Нік та пароль мають бути від 2 символів!', 'error'); 
-        return; 
-      }
-
-      if (nick === 'Ole_Kon' && pass !== '26072013') {
-        showNotification('Недоступно! Невірний пароль адміністратора.', 'error');
-        return;
-      }
+      if (nick.length < 2 || pass.length < 2) return showNotification('Нік та пароль мають бути від 2 символів!', 'error'); 
+      if (nick === 'Ole_Kon' && pass !== '26072013') return showNotification('Недоступно! Невірний пароль адміністратора.', 'error');
       
       document.getElementById('loader').style.display = 'flex';
       
-      // Перевіряємо ХМАРУ замість локальної пам'яті
       db.ref('users/' + nick).once('value', (snapshot) => {
         document.getElementById('loader').style.display = 'none';
-        
         if (snapshot.exists()) {
-          // Користувач є в базі!
           const cloudData = snapshot.val();
           if (cloudData.password === pass) {
-            // Пароль правильний - синхронізуємо дані
             userData = { ...userData, ...cloudData };
             currentUserKey = 'schoolClicker_user_' + nick;
-            localStorage.setItem(currentUserKey, JSON.stringify(userData));
-            localStorage.setItem('schoolClicker_lastUser', currentUserKey);
-            document.getElementById('auth-screen').style.display = 'none'; 
-            startGameUI();
-            playSound(sfxSuccess);
-            showNotification('Дані успішно синхронізовано!', 'success');
-          } else {
-            showNotification('Цей нікнейм вже зайнятий або пароль невірний!', 'error');
-          }
+            saveProgress(); document.getElementById('auth-screen').style.display = 'none'; startGameUI();
+            playSound(sfxSuccess); showNotification('Дані успішно синхронізовано!', 'success');
+          } else { showNotification('Цей нікнейм вже зайнятий або пароль невірний!', 'error'); }
         } else {
-          // Новий користувач
           currentUserKey = 'schoolClicker_user_' + nick;
-          userData.username = nick; 
-          userData.password = pass; 
-          userData.avatarType = tempRegAvatarType; 
-          userData.avatarData = tempRegAvatarData;
-          userData.energy = MAX_ENERGY; 
-          userData.cooldownUntil = 0;
-          saveProgress(); 
-          document.getElementById('auth-screen').style.display = 'none'; 
-          startGameUI();
+          userData.username = nick; userData.password = pass; 
+          userData.avatarType = tempRegAvatarType; userData.avatarData = tempRegAvatarData;
+          userData.energy = MAX_ENERGY; userData.cooldownUntil = 0;
+          saveProgress(); document.getElementById('auth-screen').style.display = 'none'; startGameUI();
           playSound(sfxSuccess);
         }
       });
     }
 
-    // --- ЗАВАНТАЖЕННЯ ГРИ (ПЕРЕВІРКА ХМАРИ) ---
     window.onload = function() {
       const lastUser = localStorage.getItem('schoolClicker_lastUser');
       if (lastUser) {
         const savedStr = localStorage.getItem(lastUser);
         if (savedStr) {
            const tempUser = JSON.parse(savedStr);
-           
-           // Синхронізуємо з хмарою при вході!
            db.ref('users/' + tempUser.username).once('value').then((snapshot) => {
                document.getElementById("loader").style.display = "none";
-               if(snapshot.exists()) {
-                   userData = { ...userData, ...snapshot.val() };
-               } else {
-                   userData = { ...userData, ...tempUser };
-               }
-               currentUserKey = lastUser;
-               localStorage.setItem(currentUserKey, JSON.stringify(userData));
-               startGameUI();
+               if(snapshot.exists()) { userData = { ...userData, ...snapshot.val() }; } 
+               else { userData = { ...userData, ...tempUser }; }
+               currentUserKey = lastUser; saveProgress(); startGameUI();
            }).catch((err) => {
-               // Якщо немає інтернету - граємо локально
                document.getElementById("loader").style.display = "none";
-               userData = { ...userData, ...tempUser };
-               currentUserKey = lastUser;
-               startGameUI();
+               userData = { ...userData, ...tempUser }; currentUserKey = lastUser; startGameUI();
            });
            return; 
         }
       }
-      
-      // Якщо немає збережень
       setTimeout(() => {
-          document.getElementById("loader").style.display = "none";
-          document.getElementById("auth-screen").style.display = "flex";
+          document.getElementById("loader").style.display = "none"; document.getElementById("auth-screen").style.display = "flex";
       }, 1500);
     };
 
+    // --- СОЦІАЛЬНА СИСТЕМА (ДРУЗІ ТА ЧАТ) ---
+    
+    // Переключення вкладок в меню чату
+    function switchChatTab(tabName) {
+        document.querySelectorAll('.chat-tab').forEach(el => el.classList.remove('active'));
+        document.querySelectorAll('.chat-tab-content').forEach(el => el.classList.remove('active'));
+        
+        document.getElementById('tab-btn-' + tabName).classList.add('active');
+        document.getElementById('chat-tab-' + tabName).classList.add('active');
+        playSound(sfxTap);
+    }
+
+    // Відправити запит в друзі
+    function sendFriendRequest() {
+        const targetNick = document.getElementById('add-friend-input').value.trim();
+        if(!targetNick) return;
+        if(targetNick === userData.username) return showNotification('Не можна додати себе!', 'error');
+
+        // Перевіряємо чи є такий юзер
+        db.ref('leaderboard/' + targetNick).once('value', snap => {
+            if(snap.exists()) {
+                db.ref('friendRequests/' + targetNick + '/' + userData.username).set(true);
+                showNotification('Запит відправлено!', 'success');
+                document.getElementById('add-friend-input').value = '';
+            } else {
+                showNotification('Гравця не знайдено!', 'error');
+            }
+        });
+    }
+
+    // Прийняти або відхилити
+    function handleFriendRequest(senderNick, isAccept) {
+        db.ref('friendRequests/' + userData.username + '/' + senderNick).remove(); // видаляємо запит
+        if (isAccept) {
+            db.ref('friends/' + userData.username + '/' + senderNick).set(true);
+            db.ref('friends/' + senderNick + '/' + userData.username).set(true);
+            showNotification('Друга додано!', 'success');
+        } else {
+            showNotification('Запит відхилено.', 'error');
+        }
+    }
+
+    // Завантаження аватарок для списків
+    function getAvatarHtml(nick, callback) {
+        if(cachedUsers[nick]) return callback(cachedUsers[nick]);
+        db.ref('leaderboard/' + nick).once('value', snap => {
+            if(snap.exists()) {
+                const d = snap.val();
+                const html = d.avatarType === 'image' 
+                    ? `<div class="rank-avatar" style="background-image: url('${d.avatarData}')"></div>`
+                    : `<div class="rank-avatar">${d.avatarData || '😎'}</div>`;
+                cachedUsers[nick] = html;
+                callback(html);
+            } else { callback(`<div class="rank-avatar">👤</div>`); }
+        });
+    }
+
+    // Генерація ID чату (завжди однаковий для двох людей)
+    function getChatId(user1, user2) { return [user1, user2].sort().join('_'); }
+
+    // Відкрити чат
+    function openPrivateChat(friendNick) {
+        currentChatWith = friendNick;
+        document.getElementById('private-chat-name').innerText = friendNick;
+        document.getElementById('private-chat-window').style.display = 'flex';
+        
+        getAvatarHtml(friendNick, html => { document.getElementById('private-chat-avatar').outerHTML = html.replace('rank-avatar', 'rank-avatar" id="private-chat-avatar" style="margin:0;"'); });
+
+        const chatId = getChatId(userData.username, friendNick);
+        
+        // Слухаємо повідомлення ТІЛЬКИ цього чату
+        db.ref('chats/' + chatId).off();
+        db.ref('chats/' + chatId).on('value', snap => {
+            const msgs = snap.val() || {};
+            const container = document.getElementById('private-chat-messages');
+            container.innerHTML = '';
+            Object.values(msgs).forEach(m => {
+                const div = document.createElement('div');
+                const isMe = m.sender === userData.username;
+                div.className = `msg-bubble ${isMe ? 'msg-my' : 'msg-other'}`;
+                div.innerText = m.text;
+                container.appendChild(div);
+            });
+            // Автоскрол вниз
+            setTimeout(() => { container.scrollTop = container.scrollHeight; }, 50);
+        });
+        
+        // Знімаємо червону точку з цього чату (якщо була)
+        db.ref('unread/' + userData.username + '/' + friendNick).remove();
+        playSound(sfxTap);
+    }
+
+    function closePrivateChat() {
+        document.getElementById('private-chat-window').style.display = 'none';
+        if(currentChatWith) db.ref('chats/' + getChatId(userData.username, currentChatWith)).off();
+        currentChatWith = null;
+        playSound(sfxTap);
+    }
+
+    function sendPrivateMessage() {
+        const input = document.getElementById('private-chat-input');
+        const text = input.value.trim();
+        if(!text || !currentChatWith) return;
+        
+        const chatId = getChatId(userData.username, currentChatWith);
+        db.ref('chats/' + chatId).push({ sender: userData.username, text: text, time: Date.now() });
+        
+        // Ставимо другові позначку "непрочитано"
+        db.ref('unread/' + currentChatWith + '/' + userData.username).set(true);
+        
+        input.value = '';
+    }
+
+    // Слухачі для червоних точок та списків (запускаються в startGameUI)
+    function setupSocialListeners() {
+        // 1. Слухаємо вхідні запити
+        db.ref('friendRequests/' + userData.username).on('value', snap => {
+            const reqs = snap.val() || {};
+            const count = Object.keys(reqs).length;
+            const list = document.getElementById('friend-requests-list');
+            list.innerHTML = '';
+            
+            if(count > 0) {
+                document.getElementById('requests-section').style.display = 'block';
+                Object.keys(reqs).forEach(sender => {
+                    getAvatarHtml(sender, html => {
+                        list.innerHTML += `
+                        <div class="friend-item">
+                            <div style="display:flex; align-items:center;">${html} <span style="font-weight:bold;">${sender}</span></div>
+                            <div>
+                                <button class="friend-btn friend-btn-accept" onclick="handleFriendRequest('${sender}', true)">✔</button>
+                                <button class="friend-btn friend-btn-reject" onclick="handleFriendRequest('${sender}', false)">✖</button>
+                            </div>
+                        </div>`;
+                    });
+                });
+            } else { document.getElementById('requests-section').style.display = 'none'; }
+            updateGlobalRedDot();
+        });
+
+        // 2. Слухаємо список друзів та оновлюємо вкладки
+        db.ref('friends/' + userData.username).on('value', snap => {
+            const friends = snap.val() || {};
+            const fCount = Object.keys(friends).length;
+            const fList = document.getElementById('friends-list-container');
+            const cList = document.getElementById('chats-list-container');
+            fList.innerHTML = ''; cList.innerHTML = '';
+
+            if (fCount === 0) {
+                document.getElementById('no-friends-msg').style.display = 'block';
+            } else {
+                document.getElementById('no-friends-msg').style.display = 'none';
+                Object.keys(friends).forEach(friend => {
+                    getAvatarHtml(friend, html => {
+                        // Додаємо в список друзів
+                        fList.innerHTML += `
+                        <div class="friend-item" onclick="openPrivateChat('${friend}')">
+                            <div style="display:flex; align-items:center;">${html} <span style="font-weight:bold;">${friend}</span></div>
+                            <span style="color:#aaa; font-size:20px;">💬</span>
+                        </div>`;
+                        
+                        // Додаємо в список чатів
+                        // Перевіряємо чи є непрочитані від нього
+                        db.ref('unread/' + userData.username + '/' + friend).once('value', unreadSnap => {
+                            const isUnread = unreadSnap.exists();
+                            const dot = isUnread ? `<div style="width:10px; height:10px; background:#ff5252; border-radius:50%; box-shadow:0 0 5px #ff5252;"></div>` : '';
+                            
+                            cList.innerHTML += `
+                            <div class="friend-item" onclick="openPrivateChat('${friend}')" style="background:#222; border-color:${isUnread ? '#ff9800' : '#444'};">
+                                <div style="display:flex; align-items:center;">${html} <span style="font-weight:bold;">${friend}</span></div>
+                                ${dot}
+                            </div>`;
+                        });
+                    });
+                });
+            }
+        });
+
+        // 3. Слухаємо непрочитані повідомлення для глобальної червоної точки
+        db.ref('unread/' + userData.username).on('value', snap => {
+            // Оновлюємо список чатів, щоб показати/сховати крапки на конкретних чатах
+            db.ref('friends/' + userData.username).once('value', fSnap => {
+                 db.ref('friends/' + userData.username).trigger('value', fSnap); // Хадкодний ре-рендер списку
+            });
+            updateGlobalRedDot();
+        });
+    }
+
+    function updateGlobalRedDot() {
+        db.ref('friendRequests/' + userData.username).once('value', reqSnap => {
+            db.ref('unread/' + userData.username).once('value', msgSnap => {
+                const hasReqs = reqSnap.exists() && Object.keys(reqSnap.val()).length > 0;
+                const hasMsgs = msgSnap.exists() && Object.keys(msgSnap.val()).length > 0;
+                
+                const dot = document.getElementById('nav-chat-dot');
+                const tabDot = document.getElementById('tab-friends-dot');
+                
+                if(hasReqs || hasMsgs) { dot.style.display = 'block'; } else { dot.style.display = 'none'; }
+                if(hasReqs) { tabDot.style.display = 'block'; } else { tabDot.style.display = 'none'; }
+            });
+        });
+    }
+
+    // --- ІНТЕРФЕЙС ТА ІГРОВА ЛОГІКА ---
     function loadLeaderboard() {
         const container = document.getElementById('rating-container');
         db.ref('leaderboard').orderByChild('score').limitToLast(20).once('value', (snapshot) => {
@@ -566,12 +793,9 @@
                 const item = document.createElement('div');
                 item.className = `rating-item ${index < 3 ? 'top-3' : ''}`;
                 
-                let avatarHtml = '';
-                if (player.avatarType === 'image') {
-                    avatarHtml = `<div class="rank-avatar" style="background-image: url('${player.avatarData}')"></div>`;
-                } else {
-                    avatarHtml = `<div class="rank-avatar">${player.avatarData || '😎'}</div>`;
-                }
+                let avatarHtml = player.avatarType === 'image' 
+                    ? `<div class="rank-avatar" style="background-image: url('${player.avatarData}')"></div>`
+                    : `<div class="rank-avatar">${player.avatarData || '😎'}</div>`;
 
                 item.innerHTML = `
                     <div class="rank-num">#${index + 1}</div>
@@ -587,10 +811,7 @@
         });
     }
 
-    function logoutUser() {
-      localStorage.removeItem('schoolClicker_lastUser');
-      location.reload(); 
-    }
+    function logoutUser() { localStorage.removeItem('schoolClicker_lastUser'); location.reload(); }
 
     function checkStreak() {
       const today = new Date(); today.setHours(0, 0, 0, 0); const todayTime = today.getTime();
@@ -607,55 +828,35 @@
     }
 
     function checkAdminStatus() {
-      if (userData.username === 'Ole_Kon') {
-        document.getElementById('nav-admin').style.display = 'flex';
-      } else {
+      if (userData.username === 'Ole_Kon') { document.getElementById('nav-admin').style.display = 'flex'; } 
+      else {
         document.getElementById('nav-admin').style.display = 'none';
         if(document.getElementById('admin-screen').classList.contains('active')) switchTab('game-screen', 'nav-game'); 
       }
     }
 
-    // --- ЕНЕРГІЯ ТА КУЛДАУН ---
     function updateEnergyUI() {
-      const now = Date.now();
-      const fillEl = document.getElementById('ui-energy-fill');
-      const textEl = document.getElementById('ui-energy-val');
-      const timerEl = document.getElementById('ui-cooldown-timer');
-
+      const now = Date.now(); const fillEl = document.getElementById('ui-energy-fill');
+      const textEl = document.getElementById('ui-energy-val'); const timerEl = document.getElementById('ui-cooldown-timer');
       if (now < userData.cooldownUntil) {
-        userData.energy = 0;
-        fillEl.style.width = '0%';
-        textEl.innerText = '0';
-        
+        userData.energy = 0; fillEl.style.width = '0%'; textEl.innerText = '0';
         const remainingMs = userData.cooldownUntil - now;
-        const mins = Math.floor(remainingMs / 60000);
-        const secs = Math.floor((remainingMs % 60000) / 1000);
-        timerEl.innerText = `Відпочинок: ${mins}:${secs < 10 ? '0' : ''}${secs}`;
-        timerEl.style.display = 'block';
+        const mins = Math.floor(remainingMs / 60000); const secs = Math.floor((remainingMs % 60000) / 1000);
+        timerEl.innerText = `Відпочинок: ${mins}:${secs < 10 ? '0' : ''}${secs}`; timerEl.style.display = 'block';
       } else {
-        timerEl.style.display = 'none';
-        const percent = (userData.energy / MAX_ENERGY) * 100;
-        fillEl.style.width = `${percent}%`;
-        textEl.innerText = Math.floor(userData.energy);
-        
-        if (percent < 20) fillEl.style.background = '#ff5252';
-        else fillEl.style.background = 'linear-gradient(90deg, #ff9800, #ffeb3b)';
+        timerEl.style.display = 'none'; const percent = (userData.energy / MAX_ENERGY) * 100;
+        fillEl.style.width = `${percent}%`; textEl.innerText = Math.floor(userData.energy);
+        if (percent < 20) fillEl.style.background = '#ff5252'; else fillEl.style.background = 'linear-gradient(90deg, #ff9800, #ffeb3b)';
       }
     }
 
     setInterval(() => {
       const now = Date.now();
       if (now > userData.cooldownUntil) {
-        if (userData.energy < MAX_ENERGY) {
-          userData.energy = Math.min(MAX_ENERGY, userData.energy + 1);
-          updateEnergyUI();
-        }
-      } else {
-        updateEnergyUI(); 
-      }
+        if (userData.energy < MAX_ENERGY) { userData.energy = Math.min(MAX_ENERGY, userData.energy + 1); updateEnergyUI(); }
+      } else { updateEnergyUI(); }
     }, 1000);
 
-    // --- ФОТО ТА НАЛАШТУВАННЯ ---
     function handleFileUpload(event, source) {
       const file = event.target.files[0];
       if (file) {
@@ -677,20 +878,14 @@
 
     function selectRegAvatar(element, type, data) {
       document.querySelectorAll('#reg-avatars .avatar-option').forEach(el => el.classList.remove('selected'));
-      element.classList.add('selected'); tempRegAvatarType = type; tempRegAvatarData = data;
-      playSound(sfxTap);
+      element.classList.add('selected'); tempRegAvatarType = type; tempRegAvatarData = data; playSound(sfxTap);
     }
     
     function changeSettingsAvatar(type, data) {
-      userData.avatarType = type;
-      userData.avatarData = data;
-      updateGlobalAvatar();
-      saveProgress();
-      playSound(sfxTap);
+      userData.avatarType = type; userData.avatarData = data; updateGlobalAvatar(); saveProgress(); playSound(sfxTap);
       showNotification('Аватар змінено!', 'success');
     }
 
-    // --- ІНТЕРФЕЙС ---
     function renderAvatarPreview(elementId, type, data) {
       const el = document.getElementById(elementId);
       if (type === 'image') { el.innerHTML = ''; el.style.backgroundImage = `url(${data})`; } 
@@ -703,32 +898,23 @@
     }
 
     function updateScoreUI() {
-      const formattedScore = formatScore(userData.score);
-      document.getElementById("big-score").innerText = formattedScore;
-      document.getElementById("global-score").innerText = formattedScore;
+      const s = formatScore(userData.score);
+      document.getElementById("big-score").innerText = s; document.getElementById("global-score").innerText = s;
     }
 
     function showNotification(text, type) {
-      const el = document.getElementById("notification");
-      el.innerText = text; 
-      
+      const el = document.getElementById("notification"); el.innerText = text; 
       if(type === 'error') { el.className = 'notif-error'; playSound(sfxError); } 
       else if(type === 'admin') { el.className = 'notif-admin'; playSound(sfxSuccess); } 
       else if(type === 'rebirth') { el.className = 'notif-rebirth'; playSound(sfxSuccess); } 
       else { el.className = 'notif-success'; playSound(sfxSuccess); }
-      
       el.style.top = '20px'; setTimeout(() => { el.style.top = '-100px'; }, 2000);
     }
 
-    // --- ПЕРЕРОДЖЕННЯ (СКИДАННЯ) ---
     function calculateRebirthUnlocks() {
-      userData.ownedSubjects = ['music'];
-      userData.ownedColors = ['default'];
-      userData.currentSubjectId = 'music';
-      userData.currentColorId = 'default';
-      userData.energy = MAX_ENERGY;
-      userData.cooldownUntil = 0;
-
+      userData.ownedSubjects = ['music']; userData.ownedColors = ['default'];
+      userData.currentSubjectId = 'music'; userData.currentColorId = 'default';
+      userData.energy = MAX_ENERGY; userData.cooldownUntil = 0;
       for(let i = 1; i <= userData.rebirths; i++) {
         if(i < subjectsList.length) userData.ownedSubjects.push(subjectsList[i].id);
         if(i < colorsList.length) userData.ownedColors.push(colorsList[i].id);
@@ -739,29 +925,19 @@
     function updateRebirthUI() {
       document.getElementById('header-rebirth').innerText = userData.rebirths;
       document.getElementById('ui-click-power').innerText = (1 + userData.rebirths);
-      
       const btn = document.getElementById('btn-rebirth');
-      if (userData.rebirths >= rebirthCosts.length) {
-        btn.innerText = "ДОСЯГНУТО МАКСИМУМУ";
-        btn.disabled = true;
-      } else {
-        btn.innerHTML = `Переродитися (🪙 ${formatScore(rebirthCosts[userData.rebirths])})`;
-      }
+      if (userData.rebirths >= rebirthCosts.length) { btn.innerText = "ДОСЯГНУТО МАКСИМУМУ"; btn.disabled = true; } 
+      else { btn.innerHTML = `Переродитися (🪙 ${formatScore(rebirthCosts[userData.rebirths])})`; }
     }
 
     function doRebirth() {
       if (userData.rebirths >= rebirthCosts.length) return;
       const cost = rebirthCosts[userData.rebirths];
-      
       if (userData.score >= cost) {
-        userData.score = 0; 
-        userData.rebirths++;
-        calculateRebirthUnlocks(); 
+        userData.score = 0; userData.rebirths++; calculateRebirthUnlocks(); 
         updateScoreUI(); updateRebirthUI(); saveProgress(); renderShop(); updateEnergyUI();
         showNotification('🌟 ПЕРЕРОДЖЕННЯ УСПІШНЕ!', 'rebirth');
-      } else {
-        showNotification('Не вистачає монет!', 'error');
-      }
+      } else { showNotification('Не вистачає монет!', 'error'); }
     }
 
     function applyCurrentSkin() {
@@ -778,170 +954,70 @@
     function startGameUI() {
       document.getElementById("ui-nickname").innerText = userData.username;
       updateGlobalAvatar(); checkStreak(); checkAdminStatus(); updateScoreUI(); updateRebirthUI(); updateEnergyUI();
-      
-      applyCurrentSkin();
-      
-      renderShop(); document.getElementById("app").style.display = "flex"; document.getElementById("global-header").style.display = "flex";
+      applyCurrentSkin(); renderShop(); 
+      document.getElementById("app").style.display = "flex"; document.getElementById("global-header").style.display = "flex";
 
-      // --- ПЕРЕВІРКА НА БАН (FIREBASE) ---
+      // Запускаємо соціальні слухачі
+      setupSocialListeners();
+
       db.ref('banned/' + userData.username).on('value', (snapshot) => {
         if (snapshot.val() === true) {
-          document.body.innerHTML = '<div style="display:flex; justify-content:center; align-items:center; height:100vh; background:#111; flex-direction:column;"><h1 style="color:#ff5252; font-size:40px; margin:0;">🔨</h1><h2 style="color:#ff5252; text-align:center;">ВИ ЗАБАНЕНІ АДМІНІСТРАТОРОМ</h2><p style="color:#888;">Доступ до гри закрито.</p></div>';
+          document.body.innerHTML = '<div style="display:flex; justify-content:center; align-items:center; height:100vh; background:#111; flex-direction:column;"><h1 style="color:#ff5252; font-size:40px; margin:0;">🔨</h1><h2 style="color:#ff5252; text-align:center;">ВИ ЗАБАНЕНІ АДМІНІСТРАТОРОМ</h2></div>';
         }
       });
 
-      // --- ПРИЙОМ ПОСИЛОК ВІД АДМІНА (FIREBASE) ---
       db.ref('rewards/' + userData.username).on('child_added', (snapshot) => {
-        const reward = snapshot.val();
-        const rewardKey = snapshot.key;
-
-        if (reward.type === 'coins') {
-          userData.score += reward.amount;
-          showNotification(`Адмін видав вам ${formatScore(reward.amount)} монет! 💰`, 'success');
-        } else if (reward.type === 'streak') {
-          userData.streak += reward.amount;
-          document.getElementById('ui-streak').innerText = userData.streak;
-          document.getElementById('header-streak').innerText = userData.streak;
-          showNotification(`Адмін видав вам ${reward.amount} днів активу! 🔥`, 'success');
-        } else if (reward.type === 'rebirths') {
-          userData.rebirths += reward.amount;
-          calculateRebirthUnlocks(); updateRebirthUI(); renderShop();
-          showNotification(`Адмін видав вам ${reward.amount} перероджень! 🌟`, 'success');
-        } else if (reward.type === 'energy') {
-          userData.cooldownUntil = 0;
-          userData.energy = Math.min(MAX_ENERGY, userData.energy + reward.amount);
-          showNotification(`Адмін відновив вам ${reward.amount} енергії! ⚡`, 'success');
-        }
-
-        updateScoreUI(); updateEnergyUI(); saveProgress();
-        db.ref('rewards/' + userData.username + '/' + rewardKey).remove(); // Видаляємо, щоб не отримати двічі
+        const reward = snapshot.val(); const rewardKey = snapshot.key;
+        if (reward.type === 'coins') { userData.score += reward.amount; showNotification(`Адмін видав вам ${formatScore(reward.amount)} монет! 💰`, 'success'); } 
+        else if (reward.type === 'streak') { userData.streak += reward.amount; document.getElementById('ui-streak').innerText = userData.streak; document.getElementById('header-streak').innerText = userData.streak; showNotification(`Адмін видав вам ${reward.amount} днів активу! 🔥`, 'success'); } 
+        else if (reward.type === 'rebirths') { userData.rebirths += reward.amount; calculateRebirthUnlocks(); updateRebirthUI(); renderShop(); showNotification(`Адмін видав вам ${reward.amount} перероджень! 🌟`, 'success'); } 
+        else if (reward.type === 'energy') { userData.cooldownUntil = 0; userData.energy = Math.min(MAX_ENERGY, userData.energy + reward.amount); showNotification(`Адмін відновив вам ${reward.amount} енергії! ⚡`, 'success'); }
+        updateScoreUI(); updateEnergyUI(); saveProgress(); db.ref('rewards/' + userData.username + '/' + rewardKey).remove(); 
       });
     }
 
-    // --- ФУНКЦІЇ АДМІНА (ОНЛАЙН) ---
+    // ФУНКЦІЇ АДМІНА
     function adminBanUser() {
       const nick = document.getElementById('admin-target-nick').value.trim();
       if(!nick) return showNotification('Введіть нік гравця!', 'error');
       if(nick === 'Ole_Kon') return showNotification('Не можна забанити себе!', 'error');
-      
-      // Блокуємо вхід і одразу видаляємо з рейтингу
-      db.ref('banned/' + nick).set(true);
-      db.ref('leaderboard/' + nick).remove(); 
-      showNotification(`Гравця ${nick} забанено та видалено з топу! 🔨`, 'admin');
+      db.ref('banned/' + nick).set(true); db.ref('leaderboard/' + nick).remove(); 
+      showNotification(`Гравця ${nick} забанено! 🔨`, 'admin');
     }
-
     function adminUnbanUser() {
       const nick = document.getElementById('admin-target-nick').value.trim();
       if(!nick) return showNotification('Введіть нік гравця!', 'error');
-      
-      db.ref('banned/' + nick).remove();
-      showNotification(`Гравця ${nick} розбанено! 🕊️`, 'admin');
+      db.ref('banned/' + nick).remove(); showNotification(`Гравця ${nick} розбанено! 🕊️`, 'admin');
     }
-
     function adminSendReward() {
       const nick = document.getElementById('admin-target-nick').value.trim();
-      const type = document.getElementById('admin-reward-type').value;
-      const val = parseInt(document.getElementById('admin-reward-val').value);
-
-      if(!nick) return showNotification('Введіть нік гравця!', 'error');
-      if(isNaN(val) || val <= 0) return showNotification('Введіть правильну кількість!', 'error');
-
-      // ВАЖЛИВО: Ми більше не хакаємо базу напряму, щоб не збивати поточний рахунок гравця!
-      // Відправляємо тільки "посилку". Телефон гравця сам все безпечно додасть до свого рахунку.
-      db.ref('rewards/' + nick).push({ type: type, amount: val });
-      showNotification(`Відправлено ${val} (${type}) гравцю ${nick}! 🚀`, 'admin');
-      document.getElementById('admin-reward-val').value = '';
+      const type = document.getElementById('admin-reward-type').value; const val = parseInt(document.getElementById('admin-reward-val').value);
+      if(!nick || isNaN(val) || val <= 0) return showNotification('Введіть правильні дані!', 'error');
+      db.ref('rewards/' + nick).push({ type: type, amount: val }); showNotification(`Відправлено! 🚀`, 'admin'); document.getElementById('admin-reward-val').value = '';
     }
-
-    // --- ФУНКЦІЇ АДМІНА (ЛОКАЛЬНІ - ДЛЯ СЕБЕ) ---
-    function adminResetCooldown() {
-      userData.cooldownUntil = 0;
-      userData.energy = MAX_ENERGY;
-      updateEnergyUI(); saveProgress();
-      showNotification('⚡ Енергію повністю відновлено!', 'admin');
-    }
-
-    function adminGiveCustomCoins() {
-      const val = parseInt(document.getElementById('admin-coin-val').value);
-      if (isNaN(val) || val <= 0) { showNotification('Введіть правильну суму!', 'error'); return; }
-      userData.score += val; updateScoreUI(); saveProgress(); showNotification(`ВИДАНО +${formatScore(val)} 💰`, 'admin');
-      document.getElementById('admin-coin-val').value = '';
-    }
-
-    function adminGiveCustomStreak() {
-      const val = parseInt(document.getElementById('admin-streak-val').value);
-      if (isNaN(val) || val <= 0) { showNotification('Введіть правильну кількість!', 'error'); return; }
-      userData.streak += val; document.getElementById('ui-streak').innerText = userData.streak; document.getElementById('header-streak').innerText = userData.streak;
-      saveProgress(); showNotification(`ВИДАНО +${val} ДНІВ 🔥`, 'admin'); document.getElementById('admin-streak-val').value = '';
-    }
-
+    function adminResetCooldown() { userData.cooldownUntil = 0; userData.energy = MAX_ENERGY; updateEnergyUI(); saveProgress(); showNotification('⚡ Відновлено!', 'admin'); }
+    function adminGiveCustomCoins() { const val = parseInt(document.getElementById('admin-coin-val').value); if (isNaN(val) || val <= 0) return; userData.score += val; updateScoreUI(); saveProgress(); showNotification(`+${formatScore(val)} 💰`, 'admin'); document.getElementById('admin-coin-val').value = ''; }
+    function adminGiveCustomStreak() { const val = parseInt(document.getElementById('admin-streak-val').value); if (isNaN(val) || val <= 0) return; userData.streak += val; document.getElementById('ui-streak').innerText = userData.streak; document.getElementById('header-streak').innerText = userData.streak; saveProgress(); showNotification(`+${val} ДНІВ 🔥`, 'admin'); document.getElementById('admin-streak-val').value = ''; }
     function adminGiveCustomRebirths() {
-      const val = parseInt(document.getElementById('admin-rebirth-val').value);
-      if (isNaN(val) || val <= 0) { showNotification('Введіть правильну кількість!', 'error'); return; }
-      
-      let added = 0;
-      for(let i=0; i<val; i++) {
-        if(userData.rebirths < rebirthCosts.length) {
-            userData.rebirths++;
-            added++;
-        }
-      }
-      
-      if (added > 0) {
-         calculateRebirthUnlocks();
-         updateRebirthUI(); saveProgress(); renderShop(); updateEnergyUI();
-         showNotification(`ВИДАНО +${added} 🌟`, 'admin');
-      } else {
-         showNotification('Досягнуто максимум перероджень!', 'error');
-      }
-      document.getElementById('admin-rebirth-val').value = '';
+      const val = parseInt(document.getElementById('admin-rebirth-val').value); if (isNaN(val) || val <= 0) return;
+      let added = 0; for(let i=0; i<val; i++) { if(userData.rebirths < rebirthCosts.length) { userData.rebirths++; added++; } }
+      if (added > 0) { calculateRebirthUnlocks(); updateRebirthUI(); saveProgress(); renderShop(); updateEnergyUI(); showNotification(`+${added} 🌟`, 'admin'); } document.getElementById('admin-rebirth-val').value = '';
     }
-
-    function adminUnlockAll() {
-      subjectsList.forEach(s => { if(!userData.ownedSubjects.includes(s.id)) userData.ownedSubjects.push(s.id); });
-      colorsList.forEach(c => { if(!userData.ownedColors.includes(c.id)) userData.ownedColors.push(c.id); });
-      saveProgress(); renderShop(); showNotification('МАГАЗИН РОЗБЛОКОВАНО 🔓', 'admin');
-    }
-
+    function adminUnlockAll() { subjectsList.forEach(s => { if(!userData.ownedSubjects.includes(s.id)) userData.ownedSubjects.push(s.id); }); colorsList.forEach(c => { if(!userData.ownedColors.includes(c.id)) userData.ownedColors.push(c.id); }); saveProgress(); renderShop(); showNotification('РОЗБЛОКОВАНО 🔓', 'admin'); }
     function adminAddPromo() {
-      const nameInput = document.getElementById('admin-promo-name'); const rewardInput = document.getElementById('admin-promo-reward');
-      const name = nameInput.value.trim(); const reward = parseInt(rewardInput.value.trim());
-      if (name.length < 3) { showNotification('Код занадто короткий!', 'error'); return; }
-      if (isNaN(reward) || reward <= 0) { showNotification('Введіть правильну суму!', 'error'); return; }
-      if (!userData.customPromos) userData.customPromos = {};
-      userData.customPromos[name] = reward; saveProgress();
-      showNotification(`Код ${name} створено!`, 'admin'); nameInput.value = ''; rewardInput.value = '';
+      const name = document.getElementById('admin-promo-name').value.trim(); const reward = parseInt(document.getElementById('admin-promo-reward').value.trim());
+      if (name.length < 3 || isNaN(reward) || reward <= 0) return; if (!userData.customPromos) userData.customPromos = {};
+      userData.customPromos[name] = reward; saveProgress(); showNotification(`Код ${name} створено!`, 'admin');
     }
 
-    // --- ТАП (З ЕНЕРГІЄЮ) ---
+    // ТАП
     document.getElementById("tap-zone").addEventListener('click', (e) => {
       const now = Date.now();
-      
-      if (now < userData.cooldownUntil) {
-        const remainingMs = userData.cooldownUntil - now;
-        const mins = Math.ceil(remainingMs / 60000);
-        showNotification(`Відпочинь! Можна буде потапати через ${mins} хв.`, 'error');
-        return;
-      }
-
+      if (now < userData.cooldownUntil) return showNotification(`Відпочинь!`, 'error');
       const clickPower = 1 + userData.rebirths;
-
-      if (userData.energy < clickPower) {
-        userData.cooldownUntil = now + COOLDOWN_MS;
-        userData.energy = 0;
-        updateEnergyUI();
-        saveProgress();
-        showNotification(`Енергія вичерпана! Відпочинь 15 хв.`, 'error');
-        return;
-      }
-
-      userData.energy -= clickPower;
-      userData.score += clickPower; 
-      updateScoreUI(); updateEnergyUI(); saveProgress();
-      
-      playSound(sfxTap);
-      if (navigator.vibrate) navigator.vibrate(50);
-      
+      if (userData.energy < clickPower) { userData.cooldownUntil = now + COOLDOWN_MS; userData.energy = 0; updateEnergyUI(); saveProgress(); showNotification(`Енергія вичерпана!`, 'error'); return; }
+      userData.energy -= clickPower; userData.score += clickPower; updateScoreUI(); updateEnergyUI(); saveProgress();
+      playSound(sfxTap); if (navigator.vibrate) navigator.vibrate(50);
       const p = document.createElement('span'); p.className = 'plus-one'; p.innerText = '+' + clickPower;
       p.style.left = `${e.clientX}px`; p.style.top = `${e.clientY}px`;
       document.body.appendChild(p); setTimeout(() => p.remove(), 2000);
@@ -950,26 +1026,20 @@
     function switchTab(screenId, navId) {
       document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
       document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
-      document.getElementById(screenId).classList.add('active');
-      document.getElementById(navId).classList.add('active');
+      document.getElementById(screenId).classList.add('active'); document.getElementById(navId).classList.add('active');
       document.getElementById("big-score").style.display = screenId === 'game-screen' ? 'block' : 'none';
-      
       if (screenId === 'rating-screen') loadLeaderboard();
-
       playSound(sfxTap);
     }
 
-    // МАГАЗИН
     function renderShop() {
       const sCont = document.getElementById('subjects-container'); const cCont = document.getElementById('colors-container');
       sCont.innerHTML = ''; cCont.innerHTML = '';
-
       subjectsList.forEach(item => {
         const card = document.createElement('div'); card.className = `shop-card ${userData.ownedSubjects.includes(item.id) ? 'owned' : ''} ${userData.currentSubjectId === item.id ? 'selected' : ''}`;
         card.innerHTML = `<span class="item-name">${item.name}</span>${userData.ownedSubjects.includes(item.id) ? '<div class="item-owned-badge">Куплено</div>' : `<div class="item-price">🪙 ${formatScore(item.price)}</div>`}`;
         card.onclick = () => handlePurchase('subject', item); sCont.appendChild(card);
       });
-
       colorsList.forEach(item => {
         const card = document.createElement('div'); card.className = `shop-card ${userData.ownedColors.includes(item.id) ? 'owned' : ''} ${userData.currentColorId === item.id ? 'selected' : ''}`;
         card.innerHTML = `<div class="color-preview" style="background:${item.bg}"></div><span class="item-name">${item.name}</span>${userData.ownedColors.includes(item.id) ? '<div class="item-owned-badge">Куплено</div>' : `<div class="item-price">🪙 ${formatScore(item.price)}</div>`}`;
@@ -980,41 +1050,24 @@
     function handlePurchase(type, item) {
       const isSubj = type === 'subject';
       if ((isSubj ? userData.ownedSubjects : userData.ownedColors).includes(item.id)) {
-        if (isSubj) { userData.currentSubjectId = item.id; } 
-        else { userData.currentColorId = item.id; }
-        playSound(sfxTap);
-        applyCurrentSkin();
+        if (isSubj) { userData.currentSubjectId = item.id; } else { userData.currentColorId = item.id; }
+        playSound(sfxTap); applyCurrentSkin();
       } else if (userData.score >= item.price) {
         userData.score -= item.price; updateScoreUI(); 
-        
-        const minus = document.createElement('div'); minus.className = 'minus-money'; minus.innerText = `-${formatScore(item.price)}`;
-        document.body.appendChild(minus); setTimeout(() => minus.remove(), 1500);
-
-        showNotification('Куплено!', 'success');
-        playSound(sfxBuy);
-        
-        if (isSubj) { userData.ownedSubjects.push(item.id); userData.currentSubjectId = item.id; } 
-        else { userData.ownedColors.push(item.id); userData.currentColorId = item.id; }
+        const minus = document.createElement('div'); minus.className = 'minus-money'; minus.innerText = `-${formatScore(item.price)}`; document.body.appendChild(minus); setTimeout(() => minus.remove(), 1500);
+        showNotification('Куплено!', 'success'); playSound(sfxBuy);
+        if (isSubj) { userData.ownedSubjects.push(item.id); userData.currentSubjectId = item.id; } else { userData.ownedColors.push(item.id); userData.currentColorId = item.id; }
         applyCurrentSkin();
       } else { showNotification('Не вистачає монет!', 'error'); return; }
       saveProgress(); renderShop();
     }
 
-    // ПРОМОКОДИ
     function applyPromoCode() {
-      const el = document.getElementById('promo-input'); const code = el.value.trim();
-      if (code === '') return;
-      let reward = 0;
-      
-      if (code === 'OleKon7gcombat') { reward = 100; } 
-      else if (userData.customPromos && userData.customPromos[code]) { reward = userData.customPromos[code]; }
-
+      const el = document.getElementById('promo-input'); const code = el.value.trim(); if (code === '') return;
+      let reward = 0; if (code === 'OleKon7gcombat') { reward = 100; } else if (userData.customPromos && userData.customPromos[code]) { reward = userData.customPromos[code]; }
       if (reward > 0) {
         if (userData.usedPromoCodes.includes(code)) { showNotification('Вже використано!', 'error'); } 
-        else {
-          userData.score += reward; userData.usedPromoCodes.push(code); updateScoreUI(); saveProgress(); 
-          showNotification(`Активовано! +${formatScore(reward)}`, 'success'); el.value = ''; 
-        }
+        else { userData.score += reward; userData.usedPromoCodes.push(code); updateScoreUI(); saveProgress(); showNotification(`Активовано! +${formatScore(reward)}`, 'success'); el.value = ''; }
       } else { showNotification('Неправильний код!', 'error'); }
     }
   </script>
