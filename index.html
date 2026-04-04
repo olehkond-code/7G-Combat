@@ -165,15 +165,26 @@
     .msg-my { background: linear-gradient(145deg, #ffb74d, #f57c00); color: #111; align-self: flex-end; border-bottom-right-radius: 2px; font-weight: 500; }
     .msg-other { background: #333; color: #fff; align-self: flex-start; border-bottom-left-radius: 2px; border: 1px solid #444; }
     
+    /* ФОТО В ЧАТІ */
+    .msg-image { max-width: 100%; border-radius: 10px; margin-top: 5px; display: block; cursor: pointer; border: 1px solid rgba(255,255,255,0.1); }
+    #image-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 5000; justify-content: center; align-items: center; flex-direction: column; }
+    #image-modal img { max-width: 95%; max-height: 85%; border-radius: 10px; box-shadow: 0 0 20px rgba(0,0,0,0.8); }
+    .close-modal { position: absolute; top: 20px; right: 20px; font-size: 30px; color: white; cursor: pointer; background: rgba(0,0,0,0.5); width: 45px; height: 45px; border-radius: 50%; display: flex; justify-content: center; align-items: center; transition: 0.2s;}
+    .close-modal:active { transform: scale(0.8); }
+
     .typing-dot { width: 6px; height: 6px; background: #aaa; border-radius: 50%; animation: typingBounce 1.4s infinite ease-in-out both; }
     .typing-dot:nth-child(1) { animation-delay: -0.32s; }
     .typing-dot:nth-child(2) { animation-delay: -0.16s; }
     @keyframes typingBounce { 0%, 80%, 100% { transform: scale(0); } 40% { transform: scale(1); } }
 
-    .chat-input-area { padding: 10px; background: #222; display: flex; gap: 10px; border-top: 1px solid #333; padding-bottom: 25px;}
+    .chat-input-area { padding: 10px; background: #222; display: flex; gap: 10px; border-top: 1px solid #333; padding-bottom: 25px; align-items: center;}
     .chat-input { flex: 1; background: #111; border: 1px solid #555; color: white; padding: 12px; border-radius: 20px; outline: none; }
-    .chat-send-btn { background: #ff9800; border: none; border-radius: 50%; width: 45px; height: 45px; display: flex; justify-content: center; align-items: center; cursor: pointer; font-size: 20px; transition: 0.1s; }
-    .chat-send-btn:active { transform: scale(0.85); background: #f57c00; }
+    
+    /* НОВІ КНОПКИ В ЧАТІ (КАМЕРА І ВІДПРАВИТИ) */
+    .chat-btn-circle { background: #333; border: 1px solid #555; border-radius: 50%; width: 45px; height: 45px; display: flex; justify-content: center; align-items: center; cursor: pointer; font-size: 20px; transition: 0.1s; flex-shrink: 0; color: white; }
+    .chat-btn-circle:active { transform: scale(0.85); background: #555; }
+    .chat-send-btn { background: #ff9800; border-color: #f57c00; color: #111; }
+    .chat-send-btn:active { background: #f57c00; }
 
     /* НАЛАШТУВАННЯ */
     .settings-block { background: #222; border-radius: 10px; padding: 15px; display: flex; flex-direction: column; align-items: center; gap: 15px; }
@@ -319,6 +330,7 @@
         <div id="private-chat-avatar-container" style="margin:0; display:flex; align-items:center; margin-right: 10px;"></div>
         <div style="font-weight:bold; font-size:18px;" id="private-chat-name">Гравець</div>
       </div>
+      
       <div class="chat-messages" id="private-chat-messages"></div>
       
       <div id="typing-indicator-container" style="display:none; padding: 0 15px 10px 15px;">
@@ -328,9 +340,20 @@
       </div>
 
       <div class="chat-input-area">
+        <label class="chat-btn-circle">
+          📷
+          <input type="file" accept="image/*" style="display:none;" onchange="sendChatImage(event)">
+        </label>
+        
         <input type="text" id="private-chat-input" class="chat-input" placeholder="Повідомлення..." oninput="handleTyping()" onkeypress="if(event.key === 'Enter') sendPrivateMessage()">
-        <button class="chat-send-btn" onclick="sendPrivateMessage()">➤</button>
+        
+        <button class="chat-btn-circle chat-send-btn" onclick="sendPrivateMessage()">➤</button>
       </div>
+    </div>
+
+    <div id="image-modal" onclick="this.style.display='none'">
+        <div class="close-modal">✖</div>
+        <img id="image-modal-content" src="">
     </div>
 
     <div id="bonus-screen" class="screen">
@@ -490,7 +513,7 @@
 
     let currentChatWith = null;
     let cachedUsers = {}; 
-    let typingTimer; // Таймер для анімації набору тексту
+    let typingTimer; 
 
     const subjectsList = [
       { id: 'music', name: "Музика", price: 0 }, { id: 'art', name: "Малювання", price: 50 },
@@ -647,17 +670,12 @@
 
     function getChatId(user1, user2) { return [user1, user2].sort().join('_'); }
 
-    // ТАЙПІНГ ФУНКЦІЯ
     function handleTyping() {
         if(!currentChatWith) return;
         const chatId = getChatId(userData.username, currentChatWith);
-        // Записуємо в базу, що ми друкуємо
         db.ref('typing/' + chatId + '/' + userData.username).set(true);
         clearTimeout(typingTimer);
-        // Якщо не вводили текст 1.5 сек - прибираємо статус
-        typingTimer = setTimeout(() => {
-            db.ref('typing/' + chatId + '/' + userData.username).remove();
-        }, 1500);
+        typingTimer = setTimeout(() => { db.ref('typing/' + chatId + '/' + userData.username).remove(); }, 1500);
     }
 
     function openPrivateChat(friendNick) {
@@ -665,29 +683,36 @@
         document.getElementById('private-chat-name').innerText = friendNick;
         document.getElementById('private-chat-window').style.display = 'flex';
         
-        // ВИПРАВЛЕННЯ АВАТАРКИ: вставляємо її в контейнер безпечно
         getAvatarHtml(friendNick, html => { 
             document.getElementById('private-chat-avatar-container').innerHTML = html; 
         });
 
         const chatId = getChatId(userData.username, friendNick);
         const container = document.getElementById('private-chat-messages');
-        container.innerHTML = ''; // Очищаємо перед відкриттям
+        container.innerHTML = ''; 
         
-        // ОПТИМІЗОВАНЕ ДОДАВАННЯ ПОВІДОМЛЕНЬ (з анімацією кожного нового)
         db.ref('chats/' + chatId).off();
         db.ref('chats/' + chatId).on('child_added', snap => {
             const m = snap.val();
             const div = document.createElement('div');
             const isMe = m.sender === userData.username;
             div.className = `msg-bubble ${isMe ? 'msg-my' : 'msg-other'}`;
-            div.innerText = m.text;
+            
+            let htmlContent = '';
+            // Якщо є фото, додаємо його першим
+            if (m.imageUrl) {
+                htmlContent += `<img src="${m.imageUrl}" class="msg-image" onclick="openImageModal('${m.imageUrl}')">`;
+            }
+            // Якщо є текст, додаємо його під фото
+            if (m.text) {
+                htmlContent += `<div style="margin-top: 5px;">${m.text}</div>`;
+            }
+            
+            div.innerHTML = htmlContent;
             container.appendChild(div);
-            // Автоскрол вниз
             setTimeout(() => { container.scrollTop = container.scrollHeight; }, 50);
         });
 
-        // СЛУХАЄМО, ЧИ ДРУКУЄ ДРУГ
         db.ref('typing/' + chatId + '/' + friendNick).on('value', snap => {
             const isTyping = snap.val();
             const ind = document.getElementById('typing-indicator-container');
@@ -695,7 +720,6 @@
             if(isTyping) { setTimeout(() => { container.scrollTop = container.scrollHeight; }, 50); }
         });
         
-        // Знімаємо червону точку
         db.ref('unread/' + userData.username + '/' + friendNick).remove();
         playSound(sfxTap);
     }
@@ -711,20 +735,53 @@
         playSound(sfxTap);
     }
 
-    function sendPrivateMessage() {
+    // НОВА ФУНКЦІЯ ВІДПРАВКИ ФОТО
+    function sendChatImage(event) {
+        const file = event.target.files[0];
+        if(!file) return;
+        if(file.size > 2000000) {
+            event.target.value = ''; 
+            return showNotification('Файл занадто великий! Максимум 2МБ.', 'error');
+        }
+        
+        showNotification('Завантаження фото...', 'success');
+        
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            // Викликаємо стандартну функцію відправки, але передаємо їй базу64-картинку
+            sendPrivateMessage(e.target.result); 
+        };
+        reader.readAsDataURL(file);
+        event.target.value = ''; // очищаємо інпут
+    }
+
+    // ОНОВЛЕНА ФУНКЦІЯ ВІДПРАВКИ (ПРИЙМАЄ ФОТО)
+    function sendPrivateMessage(imageData = null) {
         const input = document.getElementById('private-chat-input');
         const text = input.value.trim();
-        if(!text || !currentChatWith) return;
+        
+        // Якщо немає ні тексту, ні фотографії - не відправляємо
+        if((!text && !imageData) || !currentChatWith) return;
         
         const chatId = getChatId(userData.username, currentChatWith);
-        db.ref('chats/' + chatId).push({ sender: userData.username, text: text, time: Date.now() });
+        
+        const messageObject = { sender: userData.username, time: Date.now() };
+        if (text) messageObject.text = text;
+        if (imageData) messageObject.imageUrl = imageData;
+
+        db.ref('chats/' + chatId).push(messageObject);
         db.ref('unread/' + currentChatWith + '/' + userData.username).set(true);
         
-        // Прибираємо статус тайпінгу одразу після відправки
         db.ref('typing/' + chatId + '/' + userData.username).remove();
         clearTimeout(typingTimer);
         
         input.value = '';
+    }
+
+    function openImageModal(src) {
+        document.getElementById('image-modal-content').src = src;
+        document.getElementById('image-modal').style.display = 'flex';
+        playSound(sfxTap);
     }
 
     function setupSocialListeners() {
