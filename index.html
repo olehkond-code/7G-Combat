@@ -699,11 +699,9 @@
             div.className = `msg-bubble ${isMe ? 'msg-my' : 'msg-other'}`;
             
             let htmlContent = '';
-            // Якщо є фото, додаємо його першим
             if (m.imageUrl) {
                 htmlContent += `<img src="${m.imageUrl}" class="msg-image" onclick="openImageModal('${m.imageUrl}')">`;
             }
-            // Якщо є текст, додаємо його під фото
             if (m.text) {
                 htmlContent += `<div style="margin-top: 5px;">${m.text}</div>`;
             }
@@ -711,6 +709,11 @@
             div.innerHTML = htmlContent;
             container.appendChild(div);
             setTimeout(() => { container.scrollTop = container.scrollHeight; }, 50);
+
+            // ВИПРАВЛЕННЯ КРУЖКА: Якщо ми в чаті і нам написали - одразу "читаємо" повідомлення
+            if (!isMe) {
+                db.ref('unread/' + userData.username + '/' + friendNick).remove();
+            }
         });
 
         db.ref('typing/' + chatId + '/' + friendNick).on('value', snap => {
@@ -720,7 +723,11 @@
             if(isTyping) { setTimeout(() => { container.scrollTop = container.scrollHeight; }, 50); }
         });
         
-        db.ref('unread/' + userData.username + '/' + friendNick).remove();
+        // Знімаємо червону точку примусово при відкритті чату
+        db.ref('unread/' + userData.username + '/' + friendNick).remove().then(() => {
+             updateGlobalRedDot();
+        });
+        
         playSound(sfxTap);
     }
 
@@ -735,32 +742,29 @@
         playSound(sfxTap);
     }
 
-    // НОВА ФУНКЦІЯ ВІДПРАВКИ ФОТО
     function sendChatImage(event) {
         const file = event.target.files[0];
         if(!file) return;
-        if(file.size > 2000000) {
+        // ЗБІЛЬШЕНО ЛІМІТ ДО 5 МБ
+        if(file.size > 5000000) {
             event.target.value = ''; 
-            return showNotification('Файл занадто великий! Максимум 2МБ.', 'error');
+            return showNotification('Файл занадто великий! Максимум 5МБ.', 'error');
         }
         
         showNotification('Завантаження фото...', 'success');
         
         const reader = new FileReader();
         reader.onload = function(e) {
-            // Викликаємо стандартну функцію відправки, але передаємо їй базу64-картинку
             sendPrivateMessage(e.target.result); 
         };
         reader.readAsDataURL(file);
-        event.target.value = ''; // очищаємо інпут
+        event.target.value = ''; 
     }
 
-    // ОНОВЛЕНА ФУНКЦІЯ ВІДПРАВКИ (ПРИЙМАЄ ФОТО)
     function sendPrivateMessage(imageData = null) {
         const input = document.getElementById('private-chat-input');
         const text = input.value.trim();
         
-        // Якщо немає ні тексту, ні фотографії - не відправляємо
         if((!text && !imageData) || !currentChatWith) return;
         
         const chatId = getChatId(userData.username, currentChatWith);
@@ -842,6 +846,12 @@
         });
 
         db.ref('unread/' + userData.username).on('value', snap => {
+            const unreadData = snap.val() || {};
+            // Якщо ми зараз в чаті, і для цього друга прийшла червона точка - видаляємо її миттєво
+            if (currentChatWith && unreadData[currentChatWith]) {
+                db.ref('unread/' + userData.username + '/' + currentChatWith).remove();
+            }
+
             db.ref('friends/' + userData.username).once('value', fSnap => {
                  db.ref('friends/' + userData.username).trigger('value', fSnap); 
             });
@@ -941,7 +951,8 @@
     function handleFileUpload(event, source) {
       const file = event.target.files[0];
       if (file) {
-        if(file.size > 2000000) { showNotification('Фото занадто велике! Максимум 2МБ.', 'error'); return; }
+        // ЗБІЛЬШЕНО ЛІМІТ ДЛЯ АВАТАРОК ТЕЖ
+        if(file.size > 5000000) { showNotification('Фото занадто велике! Максимум 5МБ.', 'error'); return; }
         const reader = new FileReader();
         reader.onload = function(e) {
           if (source === 'reg') {
@@ -1129,27 +1140,4 @@
 
     function handlePurchase(type, item) {
       const isSubj = type === 'subject';
-      if ((isSubj ? userData.ownedSubjects : userData.ownedColors).includes(item.id)) {
-        if (isSubj) { userData.currentSubjectId = item.id; } else { userData.currentColorId = item.id; }
-        playSound(sfxTap); applyCurrentSkin();
-      } else if (userData.score >= item.price) {
-        userData.score -= item.price; updateScoreUI(); 
-        const minus = document.createElement('div'); minus.className = 'minus-money'; minus.innerText = `-${formatScore(item.price)}`; document.body.appendChild(minus); setTimeout(() => minus.remove(), 1500);
-        showNotification('Куплено!', 'success'); playSound(sfxBuy);
-        if (isSubj) { userData.ownedSubjects.push(item.id); userData.currentSubjectId = item.id; } else { userData.ownedColors.push(item.id); userData.currentColorId = item.id; }
-        applyCurrentSkin();
-      } else { showNotification('Не вистачає монет!', 'error'); return; }
-      saveProgress(); renderShop();
-    }
-
-    function applyPromoCode() {
-      const el = document.getElementById('promo-input'); const code = el.value.trim(); if (code === '') return;
-      let reward = 0; if (code === 'OleKon7gcombat') { reward = 100; } else if (userData.customPromos && userData.customPromos[code]) { reward = userData.customPromos[code]; }
-      if (reward > 0) {
-        if (userData.usedPromoCodes.includes(code)) { showNotification('Вже використано!', 'error'); } 
-        else { userData.score += reward; userData.usedPromoCodes.push(code); updateScoreUI(); saveProgress(); showNotification(`Активовано! +${formatScore(reward)}`, 'success'); el.value = ''; }
-      } else { showNotification('Неправильний код!', 'error'); }
-    }
-  </script>
-</body>
-</html>
+      if ((isSubj ? userData.ownedSubjects : userData.owned
