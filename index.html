@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>School Clicker</title>
+  <title>School Clicker Online</title>
 
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
@@ -824,8 +824,10 @@
       if(!nick) return showNotification('Введіть нік гравця!', 'error');
       if(nick === 'Ole_Kon') return showNotification('Не можна забанити себе!', 'error');
       
+      // Блокуємо вхід і одразу видаляємо з рейтингу
       db.ref('banned/' + nick).set(true);
-      showNotification(`Гравця ${nick} забанено! 🔨`, 'admin');
+      db.ref('leaderboard/' + nick).remove(); 
+      showNotification(`Гравця ${nick} забанено та видалено з топу! 🔨`, 'admin');
     }
 
     function adminUnbanUser() {
@@ -844,28 +846,8 @@
       if(!nick) return showNotification('Введіть нік гравця!', 'error');
       if(isNaN(val) || val <= 0) return showNotification('Введіть правильну кількість!', 'error');
 
-      // ОНОВЛЮЄМО БАЗУ ОДРАЗУ, ЩОБ БУЛО ВИДНО В РЕЙТИНГУ (навіть якщо гравець офлайн)
-      db.ref('leaderboard/' + nick).once('value', snapshot => {
-        if(snapshot.exists()) {
-          const p = snapshot.val();
-          if(type === 'coins') db.ref('leaderboard/' + nick + '/score').set((p.score || 0) + val);
-          if(type === 'rebirths') db.ref('leaderboard/' + nick + '/rebirths').set((p.rebirths || 0) + val);
-          if(type === 'streak') db.ref('leaderboard/' + nick + '/streak').set((p.streak || 1) + val);
-        }
-      });
-
-      // ОНОВЛЮЄМО ХМАРНИЙ ПРОФІЛЬ ЮЗЕРА ОДРАЗУ
-      db.ref('users/' + nick).once('value', snapshot => {
-        if(snapshot.exists()) {
-          let u = snapshot.val();
-          if(type === 'coins') u.score += val;
-          if(type === 'streak') u.streak += val;
-          if(type === 'rebirths') { u.rebirths += val; }
-          db.ref('users/' + nick).set(u);
-        }
-      });
-
-      // Відправляємо посилку у Firebase, щоб гравець отримав повідомлення коли зайде
+      // ВАЖЛИВО: Ми більше не хакаємо базу напряму, щоб не збивати поточний рахунок гравця!
+      // Відправляємо тільки "посилку". Телефон гравця сам все безпечно додасть до свого рахунку.
       db.ref('rewards/' + nick).push({ type: type, amount: val });
       showNotification(`Відправлено ${val} (${type}) гравцю ${nick}! 🚀`, 'admin');
       document.getElementById('admin-reward-val').value = '';
