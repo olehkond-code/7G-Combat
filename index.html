@@ -155,12 +155,25 @@
     .chat-header { padding: 15px 20px; background: #222; display: flex; align-items: center; border-bottom: 1px solid #333; gap: 15px;}
     .chat-back-btn { background: none; border: none; color: #ff9800; font-size: 24px; cursor: pointer; }
     .chat-messages { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
-    .msg-bubble { padding: 10px 15px; border-radius: 15px; max-width: 75%; word-wrap: break-word; font-size: 14px; }
+    
+    /* АНІМАЦІЇ ЧАТУ ТА ТАЙПІНГУ */
+    .msg-bubble { padding: 10px 15px; border-radius: 15px; max-width: 75%; word-wrap: break-word; font-size: 14px; animation: msgSlideIn 0.3s cubic-bezier(0.25, 0.8, 0.25, 1) forwards; transform-origin: bottom; }
+    @keyframes msgSlideIn { 
+      from { opacity: 0; transform: translateY(15px) scale(0.95); } 
+      to { opacity: 1; transform: translateY(0) scale(1); } 
+    }
     .msg-my { background: linear-gradient(145deg, #ffb74d, #f57c00); color: #111; align-self: flex-end; border-bottom-right-radius: 2px; font-weight: 500; }
     .msg-other { background: #333; color: #fff; align-self: flex-start; border-bottom-left-radius: 2px; border: 1px solid #444; }
+    
+    .typing-dot { width: 6px; height: 6px; background: #aaa; border-radius: 50%; animation: typingBounce 1.4s infinite ease-in-out both; }
+    .typing-dot:nth-child(1) { animation-delay: -0.32s; }
+    .typing-dot:nth-child(2) { animation-delay: -0.16s; }
+    @keyframes typingBounce { 0%, 80%, 100% { transform: scale(0); } 40% { transform: scale(1); } }
+
     .chat-input-area { padding: 10px; background: #222; display: flex; gap: 10px; border-top: 1px solid #333; padding-bottom: 25px;}
     .chat-input { flex: 1; background: #111; border: 1px solid #555; color: white; padding: 12px; border-radius: 20px; outline: none; }
-    .chat-send-btn { background: #ff9800; border: none; border-radius: 50%; width: 45px; height: 45px; display: flex; justify-content: center; align-items: center; cursor: pointer; font-size: 20px;}
+    .chat-send-btn { background: #ff9800; border: none; border-radius: 50%; width: 45px; height: 45px; display: flex; justify-content: center; align-items: center; cursor: pointer; font-size: 20px; transition: 0.1s; }
+    .chat-send-btn:active { transform: scale(0.85); background: #f57c00; }
 
     /* НАЛАШТУВАННЯ */
     .settings-block { background: #222; border-radius: 10px; padding: 15px; display: flex; flex-direction: column; align-items: center; gap: 15px; }
@@ -303,12 +316,19 @@
     <div id="private-chat-window">
       <div class="chat-header">
         <button class="chat-back-btn" onclick="closePrivateChat()">⬅</button>
-        <div class="rank-avatar" id="private-chat-avatar" style="margin:0;"></div>
+        <div id="private-chat-avatar-container" style="margin:0; display:flex; align-items:center; margin-right: 10px;"></div>
         <div style="font-weight:bold; font-size:18px;" id="private-chat-name">Гравець</div>
       </div>
       <div class="chat-messages" id="private-chat-messages"></div>
+      
+      <div id="typing-indicator-container" style="display:none; padding: 0 15px 10px 15px;">
+        <div class="msg-bubble msg-other" style="padding: 10px 15px; display: flex; gap: 5px; width: max-content; align-items: center; border-radius: 15px; animation: msgSlideIn 0.2s ease-out forwards;">
+           <div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div>
+        </div>
+      </div>
+
       <div class="chat-input-area">
-        <input type="text" id="private-chat-input" class="chat-input" placeholder="Повідомлення..." onkeypress="if(event.key === 'Enter') sendPrivateMessage()">
+        <input type="text" id="private-chat-input" class="chat-input" placeholder="Повідомлення..." oninput="handleTyping()" onkeypress="if(event.key === 'Enter') sendPrivateMessage()">
         <button class="chat-send-btn" onclick="sendPrivateMessage()">➤</button>
       </div>
     </div>
@@ -468,10 +488,10 @@
     let tempRegAvatarType = "emoji";
     let tempRegAvatarData = "😎";
 
-    let currentChatWith = null; // З ким зараз відкритий чат
-    let cachedUsers = {}; // Кеш для аватарок друзів
+    let currentChatWith = null;
+    let cachedUsers = {}; 
+    let typingTimer; // Таймер для анімації набору тексту
 
-    // --- БАЗА ТОВАРІВ ---
     const subjectsList = [
       { id: 'music', name: "Музика", price: 0 }, { id: 'art', name: "Малювання", price: 50 },
       { id: 'tech', name: "Технології", price: 100 }, { id: 'physics', name: "Фізика", price: 250 },
@@ -580,47 +600,37 @@
 
     // --- СОЦІАЛЬНА СИСТЕМА (ДРУЗІ ТА ЧАТ) ---
     
-    // Переключення вкладок в меню чату
     function switchChatTab(tabName) {
         document.querySelectorAll('.chat-tab').forEach(el => el.classList.remove('active'));
         document.querySelectorAll('.chat-tab-content').forEach(el => el.classList.remove('active'));
-        
         document.getElementById('tab-btn-' + tabName).classList.add('active');
         document.getElementById('chat-tab-' + tabName).classList.add('active');
         playSound(sfxTap);
     }
 
-    // Відправити запит в друзі
     function sendFriendRequest() {
         const targetNick = document.getElementById('add-friend-input').value.trim();
         if(!targetNick) return;
         if(targetNick === userData.username) return showNotification('Не можна додати себе!', 'error');
 
-        // Перевіряємо чи є такий юзер
         db.ref('leaderboard/' + targetNick).once('value', snap => {
             if(snap.exists()) {
                 db.ref('friendRequests/' + targetNick + '/' + userData.username).set(true);
                 showNotification('Запит відправлено!', 'success');
                 document.getElementById('add-friend-input').value = '';
-            } else {
-                showNotification('Гравця не знайдено!', 'error');
-            }
+            } else { showNotification('Гравця не знайдено!', 'error'); }
         });
     }
 
-    // Прийняти або відхилити
     function handleFriendRequest(senderNick, isAccept) {
-        db.ref('friendRequests/' + userData.username + '/' + senderNick).remove(); // видаляємо запит
+        db.ref('friendRequests/' + userData.username + '/' + senderNick).remove(); 
         if (isAccept) {
             db.ref('friends/' + userData.username + '/' + senderNick).set(true);
             db.ref('friends/' + senderNick + '/' + userData.username).set(true);
             showNotification('Друга додано!', 'success');
-        } else {
-            showNotification('Запит відхилено.', 'error');
-        }
+        } else { showNotification('Запит відхилено.', 'error'); }
     }
 
-    // Завантаження аватарок для списків
     function getAvatarHtml(nick, callback) {
         if(cachedUsers[nick]) return callback(cachedUsers[nick]);
         db.ref('leaderboard/' + nick).once('value', snap => {
@@ -635,44 +645,68 @@
         });
     }
 
-    // Генерація ID чату (завжди однаковий для двох людей)
     function getChatId(user1, user2) { return [user1, user2].sort().join('_'); }
 
-    // Відкрити чат
+    // ТАЙПІНГ ФУНКЦІЯ
+    function handleTyping() {
+        if(!currentChatWith) return;
+        const chatId = getChatId(userData.username, currentChatWith);
+        // Записуємо в базу, що ми друкуємо
+        db.ref('typing/' + chatId + '/' + userData.username).set(true);
+        clearTimeout(typingTimer);
+        // Якщо не вводили текст 1.5 сек - прибираємо статус
+        typingTimer = setTimeout(() => {
+            db.ref('typing/' + chatId + '/' + userData.username).remove();
+        }, 1500);
+    }
+
     function openPrivateChat(friendNick) {
         currentChatWith = friendNick;
         document.getElementById('private-chat-name').innerText = friendNick;
         document.getElementById('private-chat-window').style.display = 'flex';
         
-        getAvatarHtml(friendNick, html => { document.getElementById('private-chat-avatar').outerHTML = html.replace('rank-avatar', 'rank-avatar" id="private-chat-avatar" style="margin:0;"'); });
+        // ВИПРАВЛЕННЯ АВАТАРКИ: вставляємо її в контейнер безпечно
+        getAvatarHtml(friendNick, html => { 
+            document.getElementById('private-chat-avatar-container').innerHTML = html; 
+        });
 
         const chatId = getChatId(userData.username, friendNick);
+        const container = document.getElementById('private-chat-messages');
+        container.innerHTML = ''; // Очищаємо перед відкриттям
         
-        // Слухаємо повідомлення ТІЛЬКИ цього чату
+        // ОПТИМІЗОВАНЕ ДОДАВАННЯ ПОВІДОМЛЕНЬ (з анімацією кожного нового)
         db.ref('chats/' + chatId).off();
-        db.ref('chats/' + chatId).on('value', snap => {
-            const msgs = snap.val() || {};
-            const container = document.getElementById('private-chat-messages');
-            container.innerHTML = '';
-            Object.values(msgs).forEach(m => {
-                const div = document.createElement('div');
-                const isMe = m.sender === userData.username;
-                div.className = `msg-bubble ${isMe ? 'msg-my' : 'msg-other'}`;
-                div.innerText = m.text;
-                container.appendChild(div);
-            });
+        db.ref('chats/' + chatId).on('child_added', snap => {
+            const m = snap.val();
+            const div = document.createElement('div');
+            const isMe = m.sender === userData.username;
+            div.className = `msg-bubble ${isMe ? 'msg-my' : 'msg-other'}`;
+            div.innerText = m.text;
+            container.appendChild(div);
             // Автоскрол вниз
             setTimeout(() => { container.scrollTop = container.scrollHeight; }, 50);
         });
+
+        // СЛУХАЄМО, ЧИ ДРУКУЄ ДРУГ
+        db.ref('typing/' + chatId + '/' + friendNick).on('value', snap => {
+            const isTyping = snap.val();
+            const ind = document.getElementById('typing-indicator-container');
+            ind.style.display = isTyping ? 'block' : 'none';
+            if(isTyping) { setTimeout(() => { container.scrollTop = container.scrollHeight; }, 50); }
+        });
         
-        // Знімаємо червону точку з цього чату (якщо була)
+        // Знімаємо червону точку
         db.ref('unread/' + userData.username + '/' + friendNick).remove();
         playSound(sfxTap);
     }
 
     function closePrivateChat() {
         document.getElementById('private-chat-window').style.display = 'none';
-        if(currentChatWith) db.ref('chats/' + getChatId(userData.username, currentChatWith)).off();
+        if(currentChatWith) {
+            const chatId = getChatId(userData.username, currentChatWith);
+            db.ref('chats/' + chatId).off();
+            db.ref('typing/' + chatId + '/' + currentChatWith).off();
+        }
         currentChatWith = null;
         playSound(sfxTap);
     }
@@ -684,22 +718,21 @@
         
         const chatId = getChatId(userData.username, currentChatWith);
         db.ref('chats/' + chatId).push({ sender: userData.username, text: text, time: Date.now() });
-        
-        // Ставимо другові позначку "непрочитано"
         db.ref('unread/' + currentChatWith + '/' + userData.username).set(true);
+        
+        // Прибираємо статус тайпінгу одразу після відправки
+        db.ref('typing/' + chatId + '/' + userData.username).remove();
+        clearTimeout(typingTimer);
         
         input.value = '';
     }
 
-    // Слухачі для червоних точок та списків (запускаються в startGameUI)
     function setupSocialListeners() {
-        // 1. Слухаємо вхідні запити
         db.ref('friendRequests/' + userData.username).on('value', snap => {
             const reqs = snap.val() || {};
             const count = Object.keys(reqs).length;
             const list = document.getElementById('friend-requests-list');
             list.innerHTML = '';
-            
             if(count > 0) {
                 document.getElementById('requests-section').style.display = 'block';
                 Object.keys(reqs).forEach(sender => {
@@ -718,7 +751,6 @@
             updateGlobalRedDot();
         });
 
-        // 2. Слухаємо список друзів та оновлюємо вкладки
         db.ref('friends/' + userData.username).on('value', snap => {
             const friends = snap.val() || {};
             const fCount = Object.keys(friends).length;
@@ -732,19 +764,15 @@
                 document.getElementById('no-friends-msg').style.display = 'none';
                 Object.keys(friends).forEach(friend => {
                     getAvatarHtml(friend, html => {
-                        // Додаємо в список друзів
                         fList.innerHTML += `
                         <div class="friend-item" onclick="openPrivateChat('${friend}')">
                             <div style="display:flex; align-items:center;">${html} <span style="font-weight:bold;">${friend}</span></div>
                             <span style="color:#aaa; font-size:20px;">💬</span>
                         </div>`;
                         
-                        // Додаємо в список чатів
-                        // Перевіряємо чи є непрочитані від нього
                         db.ref('unread/' + userData.username + '/' + friend).once('value', unreadSnap => {
                             const isUnread = unreadSnap.exists();
                             const dot = isUnread ? `<div style="width:10px; height:10px; background:#ff5252; border-radius:50%; box-shadow:0 0 5px #ff5252;"></div>` : '';
-                            
                             cList.innerHTML += `
                             <div class="friend-item" onclick="openPrivateChat('${friend}')" style="background:#222; border-color:${isUnread ? '#ff9800' : '#444'};">
                                 <div style="display:flex; align-items:center;">${html} <span style="font-weight:bold;">${friend}</span></div>
@@ -756,11 +784,9 @@
             }
         });
 
-        // 3. Слухаємо непрочитані повідомлення для глобальної червоної точки
         db.ref('unread/' + userData.username).on('value', snap => {
-            // Оновлюємо список чатів, щоб показати/сховати крапки на конкретних чатах
             db.ref('friends/' + userData.username).once('value', fSnap => {
-                 db.ref('friends/' + userData.username).trigger('value', fSnap); // Хадкодний ре-рендер списку
+                 db.ref('friends/' + userData.username).trigger('value', fSnap); 
             });
             updateGlobalRedDot();
         });
@@ -771,10 +797,8 @@
             db.ref('unread/' + userData.username).once('value', msgSnap => {
                 const hasReqs = reqSnap.exists() && Object.keys(reqSnap.val()).length > 0;
                 const hasMsgs = msgSnap.exists() && Object.keys(msgSnap.val()).length > 0;
-                
                 const dot = document.getElementById('nav-chat-dot');
                 const tabDot = document.getElementById('tab-friends-dot');
-                
                 if(hasReqs || hasMsgs) { dot.style.display = 'block'; } else { dot.style.display = 'none'; }
                 if(hasReqs) { tabDot.style.display = 'block'; } else { tabDot.style.display = 'none'; }
             });
@@ -957,7 +981,6 @@
       applyCurrentSkin(); renderShop(); 
       document.getElementById("app").style.display = "flex"; document.getElementById("global-header").style.display = "flex";
 
-      // Запускаємо соціальні слухачі
       setupSocialListeners();
 
       db.ref('banned/' + userData.username).on('value', (snapshot) => {
