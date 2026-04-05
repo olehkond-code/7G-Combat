@@ -15,6 +15,13 @@
       --coin-edge: #b26a00; --coin-glow: rgba(255, 152, 0, 0.3);
     }
 
+    /* ФІКС ДЛЯ МОБІЛЬНИХ КЛАВІАТУР */
+    input, textarea, select {
+        -webkit-user-select: auto !important;
+        user-select: auto !important;
+        pointer-events: auto !important;
+    }
+
     body {
       font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
       background: radial-gradient(circle at center, #222 0%, #000 100%);
@@ -145,7 +152,7 @@
     .chat-tab-content.active { display: flex; }
     .friend-item { background: #2a2a2a; padding: 10px 15px; border-radius: 10px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #444; cursor: pointer; transition: 0.2s;}
     .friend-item:active { background: #333; }
-    .friend-btn { background: #ff9800; border: none; color: #111; font-weight: bold; padding: 5px 15px; border-radius: 8px; cursor: pointer; }
+    .friend-btn { background: #ff9800; border: none; color: #111; font-weight: bold; padding: 5px 15px; border-radius: 8px; cursor: pointer; z-index: 2; position: relative;}
     .friend-btn-accept { background: #69f0ae; color: #003300; }
     .friend-btn-reject { background: #ff5252; color: #330000; margin-left: 5px; }
     .red-dot { position: absolute; top: -2px; right: -2px; width: 10px; height: 10px; background: #ff5252; border-radius: 50%; box-shadow: 0 0 5px #ff5252; display: none; }
@@ -180,7 +187,7 @@
     .chat-input-area { padding: 10px; background: #222; display: flex; gap: 10px; border-top: 1px solid #333; padding-bottom: 25px; align-items: center;}
     .chat-input { flex: 1; background: #111; border: 1px solid #555; color: white; padding: 12px; border-radius: 20px; outline: none; }
     
-    /* НОВІ КНОПКИ В ЧАТІ (КАМЕРА І ВІДПРАВИТИ) */
+    /* НОВІ КНОПКИ В ЧАТІ */
     .chat-btn-circle { background: #333; border: 1px solid #555; border-radius: 50%; width: 45px; height: 45px; display: flex; justify-content: center; align-items: center; cursor: pointer; font-size: 20px; transition: 0.1s; flex-shrink: 0; color: white; }
     .chat-btn-circle:active { transform: scale(0.85); background: #555; }
     .chat-send-btn { background: #ff9800; border-color: #f57c00; color: #111; }
@@ -576,7 +583,8 @@
     }
 
     function loginOrRegister() {
-      const nick = document.getElementById('reg-nickname').value.trim();
+      let nick = document.getElementById('reg-nickname').value.trim();
+      nick = nick.replace(/[.#$\[\]]/g, ''); // Захист від помилок Firebase
       const pass = document.getElementById('reg-password').value.trim();
       
       if (nick.length < 2 || pass.length < 2) return showNotification('Нік та пароль мають бути від 2 символів!', 'error'); 
@@ -630,7 +638,9 @@
 
     // --- ЗМІНА НІКНЕЙМА ---
     function changeNickname() {
-      const newNick = document.getElementById('settings-new-nick').value.trim();
+      let rawNick = document.getElementById('settings-new-nick').value.trim();
+      const newNick = rawNick.replace(/[.#$\[\]]/g, ''); // Захист від помилок Firebase
+      
       if (newNick.length < 2) return showNotification('Мінімум 2 символи!', 'error');
       if (newNick === userData.username) return showNotification('Це і так твій нік!', 'error');
       
@@ -639,7 +649,6 @@
           
           const oldNick = userData.username;
 
-          // Оновлюємо нік у всіх друзів, щоб не було привидів!
           db.ref('friends/' + oldNick).once('value', fSnap => {
               const friends = fSnap.val() || {};
               Object.keys(friends).forEach(friendNick => {
@@ -648,7 +657,6 @@
                   db.ref('friends/' + newNick + '/' + friendNick).set(true);
               });
 
-              // Видаляємо старі записи
               db.ref('friends/' + oldNick).remove();
               db.ref('users/' + oldNick).remove();
               db.ref('leaderboard/' + oldNick).remove();
@@ -678,7 +686,8 @@
     }
 
     function sendFriendRequest() {
-        const targetNick = document.getElementById('add-friend-input').value.trim();
+        let targetNick = document.getElementById('add-friend-input').value.trim();
+        targetNick = targetNick.replace(/[.#$\[\]]/g, '');
         if(!targetNick) return;
         if(targetNick === userData.username) return showNotification('Не можна додати себе!', 'error');
 
@@ -708,7 +717,6 @@
         }
     }
 
-    // БІЛЬШЕ НІЯКОГО КЕШУ - ЗАВЖДИ СВІЖІ АВАТАРКИ!
     function getAvatarHtml(nick, callback) {
         db.ref('leaderboard/' + nick).once('value', snap => {
             if(snap.exists()) {
@@ -718,7 +726,6 @@
                     : `<div class="rank-avatar">${d.avatarData || '😎'}</div>`;
                 callback(html);
             } else { 
-                // Якщо гравця не існує (видалив акаунт або змінив нік)
                 callback(`<div class="rank-avatar">👤</div>`); 
             }
         });
@@ -834,7 +841,6 @@
         playSound(sfxTap);
     }
 
-    // ВИПРАВЛЕНИЙ АСИНХРОННИЙ РЕНДЕР: Більше ніяких подвійних списків!
     async function renderFriendsList() {
         const fList = document.getElementById('friends-list-container');
         const cList = document.getElementById('chats-list-container');
@@ -848,7 +854,6 @@
 
         document.getElementById('no-friends-msg').style.display = 'none';
 
-        // Чекаємо, поки завантажаться ВСІ аватари з бази
         const avatarPromises = friendsArray.map(friend => {
             return new Promise(resolve => {
                 getAvatarHtml(friend, html => resolve({ friend, html }));
@@ -857,26 +862,22 @@
 
         const results = await Promise.all(avatarPromises);
 
-        // Очищаємо список ТІЛЬКИ ОДИН РАЗ, безпосередньо перед малюванням
         fList.innerHTML = '';
         cList.innerHTML = '';
 
         results.forEach(({ friend, html }) => {
             const isUnread = unreadDataObj[friend] === true;
             
-            // Список друзів (З кнопкою видалення)
+            // Тепер можна клікати на всю лінію гравця
             const fDiv = document.createElement('div');
             fDiv.className = 'friend-item';
+            fDiv.onclick = () => openPrivateChat(friend);
             fDiv.innerHTML = `
                 <div style="display:flex; align-items:center;">${html} <span style="font-weight:bold;">${friend}</span></div>
-                <div style="display:flex; align-items:center; gap: 8px;">
-                    <button class="friend-btn friend-btn-reject" onclick="event.stopPropagation(); removeFriend('${friend}')">🗑️</button>
-                    <span style="color:#aaa; font-size:20px;" onclick="openPrivateChat('${friend}')">💬</span>
-                </div>
+                <button class="friend-btn friend-btn-reject" onclick="event.stopPropagation(); removeFriend('${friend}')">🗑️</button>
             `;
             fList.appendChild(fDiv);
 
-            // Список чатів (З червоною крапкою)
             const cDiv = document.createElement('div');
             cDiv.className = 'friend-item';
             cDiv.style.background = '#222';
