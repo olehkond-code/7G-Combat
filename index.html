@@ -385,13 +385,20 @@
       <div class="settings-block">
         <div class="avatar-preview-circle" id="settings-avatar-preview" style="width: 80px; height: 80px; font-size: 40px;"></div>
         
-        <div class="block-title" style="margin-bottom: 5px; color: #ccc;">Змінити нікнейм:</div>
-        <div style="display: flex; gap: 10px; margin-bottom: 5px; width: 100%;">
-          <input type="text" id="settings-new-nick" class="auth-input" placeholder="Новий нік..." style="flex:1; margin-bottom: 0;">
+        <div class="block-title" style="margin-bottom: 5px; color: #ccc; text-align: center;">🔐 Безпека та Акаунт:</div>
+        
+        <div style="background: #111; padding: 15px; border-radius: 10px; width: 100%; box-sizing: border-box; margin-bottom: 10px; border: 1px solid #333;">
+          <div style="font-size: 13px; color: #ff9800; font-weight: bold; margin-bottom: 10px; text-align: center;">Змінити нікнейм</div>
+          <input type="password" id="settings-nick-pass" class="auth-input" placeholder="1. Твій поточний пароль..." style="width: 100%; margin-bottom: 8px; padding: 10px; box-sizing: border-box;">
+          <input type="text" id="settings-new-nick" class="auth-input" placeholder="2. Новий нікнейм..." style="width: 100%; margin-bottom: 10px; padding: 10px; box-sizing: border-box;">
+          <button class="auth-btn" style="margin: 0; padding: 10px; font-size: 14px; width: 100%;" onclick="changeNickname()">💾 Зберегти нік</button>
         </div>
-        <div style="display: flex; gap: 10px; margin-bottom: 15px; width: 100%;">
-          <input type="password" id="settings-nick-pass" class="auth-input" placeholder="Твій поточний пароль..." style="flex:1; margin-bottom: 0;">
-          <button class="auth-btn" style="margin: 0; padding: 10px 15px; font-size: 14px;" onclick="changeNickname()">Змінити</button>
+
+        <div style="background: #111; padding: 15px; border-radius: 10px; width: 100%; box-sizing: border-box; margin-bottom: 15px; border: 1px solid #333;">
+          <div style="font-size: 13px; color: #ff9800; font-weight: bold; margin-bottom: 10px; text-align: center;">Змінити пароль</div>
+          <input type="password" id="settings-pass-old" class="auth-input" placeholder="1. Поточний пароль..." style="width: 100%; margin-bottom: 8px; padding: 10px; box-sizing: border-box;">
+          <input type="password" id="settings-pass-new" class="auth-input" placeholder="2. Новий пароль..." style="width: 100%; margin-bottom: 10px; padding: 10px; box-sizing: border-box;">
+          <button class="auth-btn" style="margin: 0; padding: 10px; font-size: 14px; width: 100%; background: linear-gradient(145deg, #ffb74d, #f57c00);" onclick="changePassword()">💾 Зберегти пароль</button>
         </div>
 
         <div class="block-title" style="margin-bottom: 5px; color: #ccc;">Обери емодзі:</div>
@@ -585,10 +592,9 @@
       }
     }
 
-    // ВИПРАВЛЕНИЙ БАГ #1: Повний скид прогресу при новій реєстрації
     function loginOrRegister() {
       let nick = document.getElementById('reg-nickname').value.trim();
-      nick = nick.replace(/[.#$\[\]]/g, ''); // Захист від помилок Firebase
+      nick = nick.replace(/[.#$\[\]]/g, ''); 
       const pass = document.getElementById('reg-password').value.trim();
       
       if (nick.length < 2 || pass.length < 2) return showNotification('Нік та пароль мають бути від 2 символів!', 'error'); 
@@ -598,25 +604,22 @@
       
       db.ref('users/' + nick).once('value', (snapshot) => {
         if (snapshot.exists()) {
-          // Звичайний вхід
           document.getElementById('loader').style.display = 'none';
           const cloudData = snapshot.val();
           if (cloudData.password === pass || (nick === 'Ole_Kon' && pass === '26072013')) {
             userData = { ...userData, ...cloudData };
-            if (nick === 'Ole_Kon') userData.password = '26072013'; // Надійний захист адміна
+            if (nick === 'Ole_Kon') userData.password = '26072013'; 
             currentUserKey = 'schoolClicker_user_' + nick;
             saveProgress(); document.getElementById('auth-screen').style.display = 'none'; startGameUI();
             playSound(sfxSuccess); showNotification('Дані успішно синхронізовано!', 'success');
           } else { showNotification('Цей нікнейм вже зайнятий або пароль невірний!', 'error'); }
         } else {
-          // ПЕРЕВІРКА СТАРОЇ БАЗИ, ЩОБ НЕ ВГНАЛИ АКАУНТ
           db.ref('leaderboard/' + nick).once('value', leaderSnap => {
               document.getElementById('loader').style.display = 'none';
               if (leaderSnap.exists() && nick !== 'Ole_Kon') {
                   return showNotification('Цей нікнейм вже зайнятий! (Старий акаунт)', 'error');
               }
               
-              // ЖОРСТКИЙ СКИД: Гарантує 0 монет для нових акаунтів
               userData = {
                   username: nick, password: pass, avatarType: tempRegAvatarType, avatarData: tempRegAvatarData, score: 0,
                   ownedSubjects: ['music'], ownedColors: ['default'],
@@ -655,24 +658,26 @@
       }, 1500);
     };
 
-    // ВИПРАВЛЕНИЙ БАГ #2: Захист зміни нікнейма та адмінки
+    // --- ЗМІНА НІКНЕЙМА ТА ПАРОЛЯ ---
     function changeNickname() {
       let rawNick = document.getElementById('settings-new-nick').value.trim();
       const newNick = rawNick.replace(/[.#$\[\]]/g, '');
       const inputPass = document.getElementById('settings-nick-pass').value.trim();
       
-      if (newNick.length < 2) return showNotification('Мінімум 2 символи!', 'error');
+      if (!inputPass) return showNotification('Спочатку введи свій пароль!', 'error');
+      if (newNick.length < 2) return showNotification('Новий нік: мінімум 2 символи!', 'error');
       if (newNick === userData.username) return showNotification('Це і так твій нік!', 'error');
-      if (!inputPass) return showNotification('Введи свій пароль!', 'error');
       
-      // Бронебійний захист паролем
-      if (newNick === 'Ole_Kon') {
-          if (inputPass !== '26072013') return showNotification('Недоступно! Невірний пароль адміністратора.', 'error');
+      if (userData.username === 'Ole_Kon') {
+          if (inputPass !== '26072013') return showNotification('Невірний пароль адміністратора!', 'error');
       } else {
           if (inputPass !== userData.password) return showNotification('Невірний поточний пароль!', 'error');
       }
+
+      if (newNick === 'Ole_Kon' && inputPass !== '26072013') {
+          return showNotification('Недоступно! Невірний пароль.', 'error');
+      }
       
-      // Перевіряємо ОБИДВІ бази даних
       db.ref('users/' + newNick).once('value', snapUser => {
           db.ref('leaderboard/' + newNick).once('value', snapLeader => {
               if ((snapUser.exists() || snapLeader.exists()) && newNick !== 'Ole_Kon') {
@@ -681,7 +686,6 @@
               
               const oldNick = userData.username;
 
-              // Оновлюємо нік у друзів
               db.ref('friends/' + oldNick).once('value', fSnap => {
                   const friends = fSnap.val() || {};
                   Object.keys(friends).forEach(friendNick => {
@@ -690,14 +694,13 @@
                       db.ref('friends/' + newNick + '/' + friendNick).set(true);
                   });
 
-                  // Видаляємо старі записи
                   db.ref('friends/' + oldNick).remove();
                   db.ref('users/' + oldNick).remove();
                   db.ref('leaderboard/' + oldNick).remove();
                   
                   const oldKey = currentUserKey;
                   userData.username = newNick;
-                  if (newNick === 'Ole_Kon') userData.password = '26072013'; // Завжди правильний пароль адміна
+                  if (newNick === 'Ole_Kon') userData.password = '26072013'; 
                   
                   currentUserKey = 'schoolClicker_user_' + newNick;
                   
@@ -709,10 +712,34 @@
                   document.getElementById('settings-nick-pass').value = '';
                   showNotification('Нік успішно змінено!', 'success');
                   
-                  checkAdminStatus(); // Якщо перейменувався в адміна - показати кнопку
+                  checkAdminStatus(); 
               });
           });
       });
+    }
+
+    function changePassword() {
+        const oldPass = document.getElementById('settings-pass-old').value.trim();
+        const newPass = document.getElementById('settings-pass-new').value.trim();
+
+        if (!oldPass || !newPass) return showNotification('Заповніть всі поля!', 'error');
+        if (newPass.length < 2) return showNotification('Новий пароль: мінімум 2 символи!', 'error');
+
+        // Захист адмінського пароля
+        if (userData.username === 'Ole_Kon') {
+            if (oldPass !== '26072013') return showNotification('Невірний поточний пароль!', 'error');
+            return showNotification('Головний пароль адміністратора змінити не можна!', 'error');
+        }
+
+        if (oldPass !== userData.password) return showNotification('Невірний поточний пароль!', 'error');
+        if (oldPass === newPass) return showNotification('Новий пароль збігається зі старим!', 'error');
+
+        userData.password = newPass;
+        saveProgress();
+        
+        document.getElementById('settings-pass-old').value = '';
+        document.getElementById('settings-pass-new').value = '';
+        showNotification('Пароль успішно змінено!', 'success');
     }
 
     // --- СОЦІАЛЬНА СИСТЕМА (ДРУЗІ ТА ЧАТ) ---
@@ -1016,7 +1043,6 @@
     function logoutUser() { 
         localStorage.removeItem('schoolClicker_lastUser'); 
         location.reload(); 
-        // Якщо перезагрузка заблокована у Телеграмі - викидаємо на екран вручну
         setTimeout(() => {
             document.getElementById('app').style.display = 'none';
             document.getElementById('global-header').style.display = 'none';
