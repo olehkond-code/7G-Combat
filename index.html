@@ -143,7 +143,7 @@
     .chat-tab.active { color: #ff9800; border-bottom: 2px solid #ff9800; }
     .chat-tab-content { display: none; flex-direction: column; gap: 10px; }
     .chat-tab-content.active { display: flex; }
-    .friend-item { background: #2a2a2a; padding: 10px 15px; border-radius: 10px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #444; cursor: pointer; }
+    .friend-item { background: #2a2a2a; padding: 10px 15px; border-radius: 10px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #444; cursor: pointer; transition: 0.2s;}
     .friend-item:active { background: #333; }
     .friend-btn { background: #ff9800; border: none; color: #111; font-weight: bold; padding: 5px 15px; border-radius: 8px; cursor: pointer; }
     .friend-btn-accept { background: #69f0ae; color: #003300; }
@@ -378,6 +378,12 @@
       <div class="settings-block">
         <div class="avatar-preview-circle" id="settings-avatar-preview" style="width: 80px; height: 80px; font-size: 40px;"></div>
         
+        <div class="block-title" style="margin-bottom: 5px; color: #ccc;">Змінити нікнейм:</div>
+        <div style="display: flex; gap: 10px; margin-bottom: 15px; width: 100%;">
+          <input type="text" id="settings-new-nick" class="auth-input" placeholder="Новий нік..." style="flex:1; margin-bottom: 0;">
+          <button class="auth-btn" style="margin: 0; padding: 10px 15px; font-size: 14px;" onclick="changeNickname()">Змінити</button>
+        </div>
+
         <div class="block-title" style="margin-bottom: 5px; color: #ccc;">Обери емодзі:</div>
         <div class="avatars-grid" id="settings-avatars" style="margin-bottom: 10px;">
           <div class="avatar-option" onclick="changeSettingsAvatar('emoji', '😎')">😎</div>
@@ -514,6 +520,8 @@
     let currentChatWith = null;
     let cachedUsers = {}; 
     let typingTimer; 
+    let currentFriends = {};
+    let unreadDataObj = {}; // Об'єкт для точного зберігання непрочитаних повідомлень
 
     const subjectsList = [
       { id: 'music', name: "Музика", price: 0 }, { id: 'art', name: "Малювання", price: 50 },
@@ -621,6 +629,32 @@
       }, 1500);
     };
 
+    // --- ЗМІНА НІКНЕЙМА ---
+    function changeNickname() {
+      const newNick = document.getElementById('settings-new-nick').value.trim();
+      if (newNick.length < 2) return showNotification('Мінімум 2 символи!', 'error');
+      if (newNick === userData.username) return showNotification('Це і так твій нік!', 'error');
+      
+      db.ref('users/' + newNick).once('value', snap => {
+          if (snap.exists()) return showNotification('Цей нік вже зайнятий!', 'error');
+          
+          // Видаляємо старі записи з бази
+          db.ref('users/' + userData.username).remove();
+          db.ref('leaderboard/' + userData.username).remove();
+          
+          const oldKey = currentUserKey;
+          userData.username = newNick;
+          currentUserKey = 'schoolClicker_user_' + newNick;
+          
+          saveProgress();
+          localStorage.removeItem(oldKey); // Видаляємо старий сейв
+          
+          document.getElementById('ui-nickname').innerText = userData.username;
+          document.getElementById('settings-new-nick').value = '';
+          showNotification('Нік успішно змінено!', 'success');
+      });
+    }
+
     // --- СОЦІАЛЬНА СИСТЕМА (ДРУЗІ ТА ЧАТ) ---
     
     function switchChatTab(tabName) {
@@ -652,6 +686,15 @@
             db.ref('friends/' + senderNick + '/' + userData.username).set(true);
             showNotification('Друга додано!', 'success');
         } else { showNotification('Запит відхилено.', 'error'); }
+    }
+    
+    // НОВА ФУНКЦІЯ ВИДАЛЕННЯ ДРУГА
+    function removeFriend(friendNick) {
+        if(confirm(`Дійсно видалити гравця ${friendNick} з друзів?`)) {
+            db.ref('friends/' + userData.username + '/' + friendNick).remove();
+            db.ref('friends/' + friendNick + '/' + userData.username).remove();
+            showNotification('Друга видалено зі списку', 'success');
+        }
     }
 
     function getAvatarHtml(nick, callback) {
@@ -699,11 +742,9 @@
             div.className = `msg-bubble ${isMe ? 'msg-my' : 'msg-other'}`;
             
             let htmlContent = '';
-            // Якщо є фото, додаємо його першим
             if (m.imageUrl) {
                 htmlContent += `<img src="${m.imageUrl}" class="msg-image" onclick="openImageModal('${m.imageUrl}')">`;
             }
-            // Якщо є текст, додаємо його під фото
             if (m.text) {
                 htmlContent += `<div style="margin-top: 5px;">${m.text}</div>`;
             }
@@ -720,6 +761,7 @@
             if(isTyping) { setTimeout(() => { container.scrollTop = container.scrollHeight; }, 50); }
         });
         
+        // Знімаємо позначку непрочитаних при відкритті чату
         db.ref('unread/' + userData.username + '/' + friendNick).remove();
         playSound(sfxTap);
     }
@@ -735,7 +777,6 @@
         playSound(sfxTap);
     }
 
-    // НОВА ФУНКЦІЯ ВІДПРАВКИ ФОТО
     function sendChatImage(event) {
         const file = event.target.files[0];
         if(!file) return;
@@ -748,19 +789,16 @@
         
         const reader = new FileReader();
         reader.onload = function(e) {
-            // Викликаємо стандартну функцію відправки, але передаємо їй базу64-картинку
             sendPrivateMessage(e.target.result); 
         };
         reader.readAsDataURL(file);
-        event.target.value = ''; // очищаємо інпут
+        event.target.value = '';
     }
 
-    // ОНОВЛЕНА ФУНКЦІЯ ВІДПРАВКИ (ПРИЙМАЄ ФОТО)
     function sendPrivateMessage(imageData = null) {
         const input = document.getElementById('private-chat-input');
         const text = input.value.trim();
         
-        // Якщо немає ні тексту, ні фотографії - не відправляємо
         if((!text && !imageData) || !currentChatWith) return;
         
         const chatId = getChatId(userData.username, currentChatWith);
@@ -770,6 +808,7 @@
         if (imageData) messageObject.imageUrl = imageData;
 
         db.ref('chats/' + chatId).push(messageObject);
+        // Ставимо позначку непрочитаного другові
         db.ref('unread/' + currentChatWith + '/' + userData.username).set(true);
         
         db.ref('typing/' + chatId + '/' + userData.username).remove();
@@ -782,6 +821,51 @@
         document.getElementById('image-modal-content').src = src;
         document.getElementById('image-modal').style.display = 'flex';
         playSound(sfxTap);
+    }
+
+    // НОВИЙ (БЕЗБАГОВИЙ) РЕНДЕР ДРУЗІВ ТА КРАПОК
+    function renderFriendsList() {
+        const fCount = Object.keys(currentFriends).length;
+        const fList = document.getElementById('friends-list-container');
+        const cList = document.getElementById('chats-list-container');
+        fList.innerHTML = ''; cList.innerHTML = '';
+
+        if (fCount === 0) {
+            document.getElementById('no-friends-msg').style.display = 'block';
+        } else {
+            document.getElementById('no-friends-msg').style.display = 'none';
+            Object.keys(currentFriends).forEach(friend => {
+                const isUnread = unreadDataObj[friend] === true;
+                
+                getAvatarHtml(friend, html => {
+                    // Список друзів (З кнопкою видалення)
+                    const fDiv = document.createElement('div');
+                    fDiv.className = 'friend-item';
+                    fDiv.innerHTML = `
+                        <div style="display:flex; align-items:center;">${html} <span style="font-weight:bold;">${friend}</span></div>
+                        <div style="display:flex; align-items:center; gap: 8px;">
+                            <button class="friend-btn friend-btn-reject" onclick="event.stopPropagation(); removeFriend('${friend}')">🗑️</button>
+                            <span style="color:#aaa; font-size:20px;" onclick="openPrivateChat('${friend}')">💬</span>
+                        </div>
+                    `;
+                    fList.appendChild(fDiv);
+
+                    // Список чатів (З червоною крапкою)
+                    const cDiv = document.createElement('div');
+                    cDiv.className = 'friend-item';
+                    cDiv.style.background = '#222';
+                    if (isUnread) cDiv.style.borderColor = '#ff9800';
+                    cDiv.onclick = () => openPrivateChat(friend);
+                    
+                    const dotHtml = isUnread ? `<div style="width:10px; height:10px; background:#ff5252; border-radius:50%; box-shadow:0 0 5px #ff5252;"></div>` : '';
+                    cDiv.innerHTML = `
+                        <div style="display:flex; align-items:center;">${html} <span style="font-weight:bold;">${friend}</span></div>
+                        ${dotHtml}
+                    `;
+                    cList.appendChild(cDiv);
+                });
+            });
+        }
     }
 
     function setupSocialListeners() {
@@ -809,56 +893,31 @@
         });
 
         db.ref('friends/' + userData.username).on('value', snap => {
-            const friends = snap.val() || {};
-            const fCount = Object.keys(friends).length;
-            const fList = document.getElementById('friends-list-container');
-            const cList = document.getElementById('chats-list-container');
-            fList.innerHTML = ''; cList.innerHTML = '';
-
-            if (fCount === 0) {
-                document.getElementById('no-friends-msg').style.display = 'block';
-            } else {
-                document.getElementById('no-friends-msg').style.display = 'none';
-                Object.keys(friends).forEach(friend => {
-                    getAvatarHtml(friend, html => {
-                        fList.innerHTML += `
-                        <div class="friend-item" onclick="openPrivateChat('${friend}')">
-                            <div style="display:flex; align-items:center;">${html} <span style="font-weight:bold;">${friend}</span></div>
-                            <span style="color:#aaa; font-size:20px;">💬</span>
-                        </div>`;
-                        
-                        db.ref('unread/' + userData.username + '/' + friend).once('value', unreadSnap => {
-                            const isUnread = unreadSnap.exists();
-                            const dot = isUnread ? `<div style="width:10px; height:10px; background:#ff5252; border-radius:50%; box-shadow:0 0 5px #ff5252;"></div>` : '';
-                            cList.innerHTML += `
-                            <div class="friend-item" onclick="openPrivateChat('${friend}')" style="background:#222; border-color:${isUnread ? '#ff9800' : '#444'};">
-                                <div style="display:flex; align-items:center;">${html} <span style="font-weight:bold;">${friend}</span></div>
-                                ${dot}
-                            </div>`;
-                        });
-                    });
-                });
-            }
+            currentFriends = snap.val() || {};
+            renderFriendsList();
         });
 
         db.ref('unread/' + userData.username).on('value', snap => {
-            db.ref('friends/' + userData.username).once('value', fSnap => {
-                 db.ref('friends/' + userData.username).trigger('value', fSnap); 
-            });
+            unreadDataObj = snap.val() || {};
             updateGlobalRedDot();
+            renderFriendsList();
         });
     }
 
     function updateGlobalRedDot() {
         db.ref('friendRequests/' + userData.username).once('value', reqSnap => {
-            db.ref('unread/' + userData.username).once('value', msgSnap => {
-                const hasReqs = reqSnap.exists() && Object.keys(reqSnap.val()).length > 0;
-                const hasMsgs = msgSnap.exists() && Object.keys(msgSnap.val()).length > 0;
-                const dot = document.getElementById('nav-chat-dot');
-                const tabDot = document.getElementById('tab-friends-dot');
-                if(hasReqs || hasMsgs) { dot.style.display = 'block'; } else { dot.style.display = 'none'; }
-                if(hasReqs) { tabDot.style.display = 'block'; } else { tabDot.style.display = 'none'; }
-            });
+            const hasReqs = reqSnap.exists() && Object.keys(reqSnap.val()).length > 0;
+            
+            // Точна перевірка: шукаємо хоча б одне значення true
+            let hasMsgs = false;
+            for (let key in unreadDataObj) {
+                if (unreadDataObj[key] === true) hasMsgs = true;
+            }
+
+            const dot = document.getElementById('nav-chat-dot');
+            const tabDot = document.getElementById('tab-friends-dot');
+            if(hasReqs || hasMsgs) { dot.style.display = 'block'; } else { dot.style.display = 'none'; }
+            if(hasReqs) { tabDot.style.display = 'block'; } else { tabDot.style.display = 'none'; }
         });
     }
 
@@ -916,11 +975,13 @@
       }
     }
 
+    // НОВА ЛОГІКА МИТТЄВОГО ВІДНОВЛЕННЯ ЕНЕРГІЇ
     function updateEnergyUI() {
       const now = Date.now(); const fillEl = document.getElementById('ui-energy-fill');
       const textEl = document.getElementById('ui-energy-val'); const timerEl = document.getElementById('ui-cooldown-timer');
-      if (now < userData.cooldownUntil) {
-        userData.energy = 0; fillEl.style.width = '0%'; textEl.innerText = '0';
+      
+      if (userData.cooldownUntil > 0 && now < userData.cooldownUntil) {
+        fillEl.style.width = '0%'; textEl.innerText = '0';
         const remainingMs = userData.cooldownUntil - now;
         const mins = Math.floor(remainingMs / 60000); const secs = Math.floor((remainingMs % 60000) / 1000);
         timerEl.innerText = `Відпочинок: ${mins}:${secs < 10 ? '0' : ''}${secs}`; timerEl.style.display = 'block';
@@ -933,9 +994,25 @@
 
     setInterval(() => {
       const now = Date.now();
-      if (now > userData.cooldownUntil) {
-        if (userData.energy < MAX_ENERGY) { userData.energy = Math.min(MAX_ENERGY, userData.energy + 1); updateEnergyUI(); }
-      } else { updateEnergyUI(); }
+      
+      // Якщо ми були в очікуванні (таймер йшов) і час вийшов:
+      if (userData.cooldownUntil > 0) {
+          if (now >= userData.cooldownUntil) {
+              userData.cooldownUntil = 0; // Скидаємо таймер
+              userData.energy = MAX_ENERGY; // МИТТЄВО відновлюємо енергію повністю
+              updateEnergyUI();
+              saveProgress();
+              showNotification('⚡ Енергія повністю відновлена!', 'success');
+          } else {
+              updateEnergyUI(); // Просто оновлюємо секунди на таймері
+          }
+      } else {
+          // Якщо ми просто витратили трохи енергії (не до нуля), вона потихеньку відновлюється
+          if (userData.energy < MAX_ENERGY) { 
+              userData.energy = Math.min(MAX_ENERGY, userData.energy + 1); 
+              updateEnergyUI(); 
+          }
+      }
     }, 1000);
 
     function handleFileUpload(event, source) {
@@ -1095,7 +1172,17 @@
       const now = Date.now();
       if (now < userData.cooldownUntil) return showNotification(`Відпочинь!`, 'error');
       const clickPower = 1 + userData.rebirths;
-      if (userData.energy < clickPower) { userData.cooldownUntil = now + COOLDOWN_MS; userData.energy = 0; updateEnergyUI(); saveProgress(); showNotification(`Енергія вичерпана!`, 'error'); return; }
+      
+      // Якщо енергія впала до нуля, даємо блок на 15 хв
+      if (userData.energy < clickPower) { 
+          userData.cooldownUntil = now + COOLDOWN_MS; 
+          userData.energy = 0; 
+          updateEnergyUI(); 
+          saveProgress(); 
+          showNotification(`Енергія вичерпана! Чекай 15 хв.`, 'error'); 
+          return; 
+      }
+      
       userData.energy -= clickPower; userData.score += clickPower; updateScoreUI(); updateEnergyUI(); saveProgress();
       playSound(sfxTap); if (navigator.vibrate) navigator.vibrate(50);
       const p = document.createElement('span'); p.className = 'plus-one'; p.innerText = '+' + clickPower;
