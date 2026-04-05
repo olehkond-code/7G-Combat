@@ -518,10 +518,9 @@
     let tempRegAvatarData = "😎";
 
     let currentChatWith = null;
-    let cachedUsers = {}; 
     let typingTimer; 
     let currentFriends = {};
-    let unreadDataObj = {}; // Об'єкт для точного зберігання непрочитаних повідомлень
+    let unreadDataObj = {}; 
 
     const subjectsList = [
       { id: 'music', name: "Музика", price: 0 }, { id: 'art', name: "Малювання", price: 50 },
@@ -638,20 +637,33 @@
       db.ref('users/' + newNick).once('value', snap => {
           if (snap.exists()) return showNotification('Цей нік вже зайнятий!', 'error');
           
-          // Видаляємо старі записи з бази
-          db.ref('users/' + userData.username).remove();
-          db.ref('leaderboard/' + userData.username).remove();
-          
-          const oldKey = currentUserKey;
-          userData.username = newNick;
-          currentUserKey = 'schoolClicker_user_' + newNick;
-          
-          saveProgress();
-          localStorage.removeItem(oldKey); // Видаляємо старий сейв
-          
-          document.getElementById('ui-nickname').innerText = userData.username;
-          document.getElementById('settings-new-nick').value = '';
-          showNotification('Нік успішно змінено!', 'success');
+          const oldNick = userData.username;
+
+          // Оновлюємо нік у всіх друзів, щоб не було привидів!
+          db.ref('friends/' + oldNick).once('value', fSnap => {
+              const friends = fSnap.val() || {};
+              Object.keys(friends).forEach(friendNick => {
+                  db.ref('friends/' + friendNick + '/' + oldNick).remove();
+                  db.ref('friends/' + friendNick + '/' + newNick).set(true);
+                  db.ref('friends/' + newNick + '/' + friendNick).set(true);
+              });
+
+              // Видаляємо старі записи
+              db.ref('friends/' + oldNick).remove();
+              db.ref('users/' + oldNick).remove();
+              db.ref('leaderboard/' + oldNick).remove();
+              
+              const oldKey = currentUserKey;
+              userData.username = newNick;
+              currentUserKey = 'schoolClicker_user_' + newNick;
+              
+              saveProgress();
+              localStorage.removeItem(oldKey);
+              
+              document.getElementById('ui-nickname').innerText = userData.username;
+              document.getElementById('settings-new-nick').value = '';
+              showNotification('Нік успішно змінено!', 'success');
+          });
       });
     }
 
@@ -688,7 +700,6 @@
         } else { showNotification('Запит відхилено.', 'error'); }
     }
     
-    // НОВА ФУНКЦІЯ ВИДАЛЕННЯ ДРУГА
     function removeFriend(friendNick) {
         if(confirm(`Дійсно видалити гравця ${friendNick} з друзів?`)) {
             db.ref('friends/' + userData.username + '/' + friendNick).remove();
@@ -697,17 +708,19 @@
         }
     }
 
+    // БІЛЬШЕ НІЯКОГО КЕШУ - ЗАВЖДИ СВІЖІ АВАТАРКИ!
     function getAvatarHtml(nick, callback) {
-        if(cachedUsers[nick]) return callback(cachedUsers[nick]);
         db.ref('leaderboard/' + nick).once('value', snap => {
             if(snap.exists()) {
                 const d = snap.val();
                 const html = d.avatarType === 'image' 
                     ? `<div class="rank-avatar" style="background-image: url('${d.avatarData}')"></div>`
                     : `<div class="rank-avatar">${d.avatarData || '😎'}</div>`;
-                cachedUsers[nick] = html;
                 callback(html);
-            } else { callback(`<div class="rank-avatar">👤</div>`); }
+            } else { 
+                // Якщо гравця не існує (видалив акаунт або змінив нік)
+                callback(`<div class="rank-avatar">👤</div>`); 
+            }
         });
     }
 
@@ -761,7 +774,6 @@
             if(isTyping) { setTimeout(() => { container.scrollTop = container.scrollHeight; }, 50); }
         });
         
-        // Знімаємо позначку непрочитаних при відкритті чату
         db.ref('unread/' + userData.username + '/' + friendNick).remove();
         playSound(sfxTap);
     }
@@ -808,7 +820,6 @@
         if (imageData) messageObject.imageUrl = imageData;
 
         db.ref('chats/' + chatId).push(messageObject);
-        // Ставимо позначку непрочитаного другові
         db.ref('unread/' + currentChatWith + '/' + userData.username).set(true);
         
         db.ref('typing/' + chatId + '/' + userData.username).remove();
@@ -823,49 +834,62 @@
         playSound(sfxTap);
     }
 
-    // НОВИЙ (БЕЗБАГОВИЙ) РЕНДЕР ДРУЗІВ ТА КРАПОК
-    function renderFriendsList() {
-        const fCount = Object.keys(currentFriends).length;
+    // ВИПРАВЛЕНИЙ АСИНХРОННИЙ РЕНДЕР: Більше ніяких подвійних списків!
+    async function renderFriendsList() {
         const fList = document.getElementById('friends-list-container');
         const cList = document.getElementById('chats-list-container');
-        fList.innerHTML = ''; cList.innerHTML = '';
+        const friendsArray = Object.keys(currentFriends);
 
-        if (fCount === 0) {
+        if (friendsArray.length === 0) {
+            fList.innerHTML = ''; cList.innerHTML = '';
             document.getElementById('no-friends-msg').style.display = 'block';
-        } else {
-            document.getElementById('no-friends-msg').style.display = 'none';
-            Object.keys(currentFriends).forEach(friend => {
-                const isUnread = unreadDataObj[friend] === true;
-                
-                getAvatarHtml(friend, html => {
-                    // Список друзів (З кнопкою видалення)
-                    const fDiv = document.createElement('div');
-                    fDiv.className = 'friend-item';
-                    fDiv.innerHTML = `
-                        <div style="display:flex; align-items:center;">${html} <span style="font-weight:bold;">${friend}</span></div>
-                        <div style="display:flex; align-items:center; gap: 8px;">
-                            <button class="friend-btn friend-btn-reject" onclick="event.stopPropagation(); removeFriend('${friend}')">🗑️</button>
-                            <span style="color:#aaa; font-size:20px;" onclick="openPrivateChat('${friend}')">💬</span>
-                        </div>
-                    `;
-                    fList.appendChild(fDiv);
-
-                    // Список чатів (З червоною крапкою)
-                    const cDiv = document.createElement('div');
-                    cDiv.className = 'friend-item';
-                    cDiv.style.background = '#222';
-                    if (isUnread) cDiv.style.borderColor = '#ff9800';
-                    cDiv.onclick = () => openPrivateChat(friend);
-                    
-                    const dotHtml = isUnread ? `<div style="width:10px; height:10px; background:#ff5252; border-radius:50%; box-shadow:0 0 5px #ff5252;"></div>` : '';
-                    cDiv.innerHTML = `
-                        <div style="display:flex; align-items:center;">${html} <span style="font-weight:bold;">${friend}</span></div>
-                        ${dotHtml}
-                    `;
-                    cList.appendChild(cDiv);
-                });
-            });
+            return;
         }
+
+        document.getElementById('no-friends-msg').style.display = 'none';
+
+        // Чекаємо, поки завантажаться ВСІ аватари з бази
+        const avatarPromises = friendsArray.map(friend => {
+            return new Promise(resolve => {
+                getAvatarHtml(friend, html => resolve({ friend, html }));
+            });
+        });
+
+        const results = await Promise.all(avatarPromises);
+
+        // Очищаємо список ТІЛЬКИ ОДИН РАЗ, безпосередньо перед малюванням
+        fList.innerHTML = '';
+        cList.innerHTML = '';
+
+        results.forEach(({ friend, html }) => {
+            const isUnread = unreadDataObj[friend] === true;
+            
+            // Список друзів (З кнопкою видалення)
+            const fDiv = document.createElement('div');
+            fDiv.className = 'friend-item';
+            fDiv.innerHTML = `
+                <div style="display:flex; align-items:center;">${html} <span style="font-weight:bold;">${friend}</span></div>
+                <div style="display:flex; align-items:center; gap: 8px;">
+                    <button class="friend-btn friend-btn-reject" onclick="event.stopPropagation(); removeFriend('${friend}')">🗑️</button>
+                    <span style="color:#aaa; font-size:20px;" onclick="openPrivateChat('${friend}')">💬</span>
+                </div>
+            `;
+            fList.appendChild(fDiv);
+
+            // Список чатів (З червоною крапкою)
+            const cDiv = document.createElement('div');
+            cDiv.className = 'friend-item';
+            cDiv.style.background = '#222';
+            if (isUnread) cDiv.style.borderColor = '#ff9800';
+            cDiv.onclick = () => openPrivateChat(friend);
+            
+            const dotHtml = isUnread ? `<div style="width:10px; height:10px; background:#ff5252; border-radius:50%; box-shadow:0 0 5px #ff5252;"></div>` : '';
+            cDiv.innerHTML = `
+                <div style="display:flex; align-items:center;">${html} <span style="font-weight:bold;">${friend}</span></div>
+                ${dotHtml}
+            `;
+            cList.appendChild(cDiv);
+        });
     }
 
     function setupSocialListeners() {
@@ -908,7 +932,6 @@
         db.ref('friendRequests/' + userData.username).once('value', reqSnap => {
             const hasReqs = reqSnap.exists() && Object.keys(reqSnap.val()).length > 0;
             
-            // Точна перевірка: шукаємо хоча б одне значення true
             let hasMsgs = false;
             for (let key in unreadDataObj) {
                 if (unreadDataObj[key] === true) hasMsgs = true;
@@ -975,7 +998,6 @@
       }
     }
 
-    // НОВА ЛОГІКА МИТТЄВОГО ВІДНОВЛЕННЯ ЕНЕРГІЇ
     function updateEnergyUI() {
       const now = Date.now(); const fillEl = document.getElementById('ui-energy-fill');
       const textEl = document.getElementById('ui-energy-val'); const timerEl = document.getElementById('ui-cooldown-timer');
@@ -995,19 +1017,17 @@
     setInterval(() => {
       const now = Date.now();
       
-      // Якщо ми були в очікуванні (таймер йшов) і час вийшов:
       if (userData.cooldownUntil > 0) {
           if (now >= userData.cooldownUntil) {
-              userData.cooldownUntil = 0; // Скидаємо таймер
-              userData.energy = MAX_ENERGY; // МИТТЄВО відновлюємо енергію повністю
+              userData.cooldownUntil = 0; 
+              userData.energy = MAX_ENERGY; 
               updateEnergyUI();
               saveProgress();
               showNotification('⚡ Енергія повністю відновлена!', 'success');
           } else {
-              updateEnergyUI(); // Просто оновлюємо секунди на таймері
+              updateEnergyUI(); 
           }
       } else {
-          // Якщо ми просто витратили трохи енергії (не до нуля), вона потихеньку відновлюється
           if (userData.energy < MAX_ENERGY) { 
               userData.energy = Math.min(MAX_ENERGY, userData.energy + 1); 
               updateEnergyUI(); 
@@ -1173,7 +1193,6 @@
       if (now < userData.cooldownUntil) return showNotification(`Відпочинь!`, 'error');
       const clickPower = 1 + userData.rebirths;
       
-      // Якщо енергія впала до нуля, даємо блок на 15 хв
       if (userData.energy < clickPower) { 
           userData.cooldownUntil = now + COOLDOWN_MS; 
           userData.energy = 0; 
