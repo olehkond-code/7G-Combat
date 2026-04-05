@@ -386,8 +386,11 @@
         <div class="avatar-preview-circle" id="settings-avatar-preview" style="width: 80px; height: 80px; font-size: 40px;"></div>
         
         <div class="block-title" style="margin-bottom: 5px; color: #ccc;">Змінити нікнейм:</div>
-        <div style="display: flex; gap: 10px; margin-bottom: 15px; width: 100%;">
+        <div style="display: flex; gap: 10px; margin-bottom: 5px; width: 100%;">
           <input type="text" id="settings-new-nick" class="auth-input" placeholder="Новий нік..." style="flex:1; margin-bottom: 0;">
+        </div>
+        <div style="display: flex; gap: 10px; margin-bottom: 15px; width: 100%;">
+          <input type="password" id="settings-nick-pass" class="auth-input" placeholder="Твій поточний пароль..." style="flex:1; margin-bottom: 0;">
           <button class="auth-btn" style="margin: 0; padding: 10px 15px; font-size: 14px;" onclick="changeNickname()">Змінити</button>
         </div>
 
@@ -582,6 +585,7 @@
       }
     }
 
+    // ВИПРАВЛЕНИЙ БАГ #1: Повний скид прогресу при новій реєстрації
     function loginOrRegister() {
       let nick = document.getElementById('reg-nickname').value.trim();
       nick = nick.replace(/[.#$\[\]]/g, ''); // Захист від помилок Firebase
@@ -593,22 +597,37 @@
       document.getElementById('loader').style.display = 'flex';
       
       db.ref('users/' + nick).once('value', (snapshot) => {
-        document.getElementById('loader').style.display = 'none';
         if (snapshot.exists()) {
+          // Звичайний вхід
+          document.getElementById('loader').style.display = 'none';
           const cloudData = snapshot.val();
-          if (cloudData.password === pass) {
+          if (cloudData.password === pass || (nick === 'Ole_Kon' && pass === '26072013')) {
             userData = { ...userData, ...cloudData };
+            if (nick === 'Ole_Kon') userData.password = '26072013'; // Надійний захист адміна
             currentUserKey = 'schoolClicker_user_' + nick;
             saveProgress(); document.getElementById('auth-screen').style.display = 'none'; startGameUI();
             playSound(sfxSuccess); showNotification('Дані успішно синхронізовано!', 'success');
           } else { showNotification('Цей нікнейм вже зайнятий або пароль невірний!', 'error'); }
         } else {
-          currentUserKey = 'schoolClicker_user_' + nick;
-          userData.username = nick; userData.password = pass; 
-          userData.avatarType = tempRegAvatarType; userData.avatarData = tempRegAvatarData;
-          userData.energy = MAX_ENERGY; userData.cooldownUntil = 0;
-          saveProgress(); document.getElementById('auth-screen').style.display = 'none'; startGameUI();
-          playSound(sfxSuccess);
+          // ПЕРЕВІРКА СТАРОЇ БАЗИ, ЩОБ НЕ ВГНАЛИ АКАУНТ
+          db.ref('leaderboard/' + nick).once('value', leaderSnap => {
+              document.getElementById('loader').style.display = 'none';
+              if (leaderSnap.exists() && nick !== 'Ole_Kon') {
+                  return showNotification('Цей нікнейм вже зайнятий! (Старий акаунт)', 'error');
+              }
+              
+              // ЖОРСТКИЙ СКИД: Гарантує 0 монет для нових акаунтів
+              userData = {
+                  username: nick, password: pass, avatarType: tempRegAvatarType, avatarData: tempRegAvatarData, score: 0,
+                  ownedSubjects: ['music'], ownedColors: ['default'],
+                  currentSubjectId: 'music', currentColorId: 'default', usedPromoCodes: [],
+                  streak: 1, lastLoginDate: 0, customPromos: {}, rebirths: 0,
+                  energy: MAX_ENERGY, cooldownUntil: 0 
+              };
+              currentUserKey = 'schoolClicker_user_' + nick;
+              saveProgress(); document.getElementById('auth-screen').style.display = 'none'; startGameUI();
+              playSound(sfxSuccess);
+          });
         }
       });
     }
@@ -636,47 +655,67 @@
       }, 1500);
     };
 
-    // --- ЗМІНА НІКНЕЙМА ---
+    // ВИПРАВЛЕНИЙ БАГ #2: Захист зміни нікнейма та адмінки
     function changeNickname() {
       let rawNick = document.getElementById('settings-new-nick').value.trim();
-      const newNick = rawNick.replace(/[.#$\[\]]/g, ''); // Захист від помилок Firebase
+      const newNick = rawNick.replace(/[.#$\[\]]/g, '');
+      const inputPass = document.getElementById('settings-nick-pass').value.trim();
       
       if (newNick.length < 2) return showNotification('Мінімум 2 символи!', 'error');
       if (newNick === userData.username) return showNotification('Це і так твій нік!', 'error');
+      if (!inputPass) return showNotification('Введи свій пароль!', 'error');
       
-      db.ref('users/' + newNick).once('value', snap => {
-          if (snap.exists()) return showNotification('Цей нік вже зайнятий!', 'error');
-          
-          const oldNick = userData.username;
+      // Бронебійний захист паролем
+      if (newNick === 'Ole_Kon') {
+          if (inputPass !== '26072013') return showNotification('Недоступно! Невірний пароль адміністратора.', 'error');
+      } else {
+          if (inputPass !== userData.password) return showNotification('Невірний поточний пароль!', 'error');
+      }
+      
+      // Перевіряємо ОБИДВІ бази даних
+      db.ref('users/' + newNick).once('value', snapUser => {
+          db.ref('leaderboard/' + newNick).once('value', snapLeader => {
+              if ((snapUser.exists() || snapLeader.exists()) && newNick !== 'Ole_Kon') {
+                  return showNotification('Цей нік вже зайнятий!', 'error');
+              }
+              
+              const oldNick = userData.username;
 
-          db.ref('friends/' + oldNick).once('value', fSnap => {
-              const friends = fSnap.val() || {};
-              Object.keys(friends).forEach(friendNick => {
-                  db.ref('friends/' + friendNick + '/' + oldNick).remove();
-                  db.ref('friends/' + friendNick + '/' + newNick).set(true);
-                  db.ref('friends/' + newNick + '/' + friendNick).set(true);
+              // Оновлюємо нік у друзів
+              db.ref('friends/' + oldNick).once('value', fSnap => {
+                  const friends = fSnap.val() || {};
+                  Object.keys(friends).forEach(friendNick => {
+                      db.ref('friends/' + friendNick + '/' + oldNick).remove();
+                      db.ref('friends/' + friendNick + '/' + newNick).set(true);
+                      db.ref('friends/' + newNick + '/' + friendNick).set(true);
+                  });
+
+                  // Видаляємо старі записи
+                  db.ref('friends/' + oldNick).remove();
+                  db.ref('users/' + oldNick).remove();
+                  db.ref('leaderboard/' + oldNick).remove();
+                  
+                  const oldKey = currentUserKey;
+                  userData.username = newNick;
+                  if (newNick === 'Ole_Kon') userData.password = '26072013'; // Завжди правильний пароль адміна
+                  
+                  currentUserKey = 'schoolClicker_user_' + newNick;
+                  
+                  saveProgress();
+                  localStorage.removeItem(oldKey);
+                  
+                  document.getElementById('ui-nickname').innerText = userData.username;
+                  document.getElementById('settings-new-nick').value = '';
+                  document.getElementById('settings-nick-pass').value = '';
+                  showNotification('Нік успішно змінено!', 'success');
+                  
+                  checkAdminStatus(); // Якщо перейменувався в адміна - показати кнопку
               });
-
-              db.ref('friends/' + oldNick).remove();
-              db.ref('users/' + oldNick).remove();
-              db.ref('leaderboard/' + oldNick).remove();
-              
-              const oldKey = currentUserKey;
-              userData.username = newNick;
-              currentUserKey = 'schoolClicker_user_' + newNick;
-              
-              saveProgress();
-              localStorage.removeItem(oldKey);
-              
-              document.getElementById('ui-nickname').innerText = userData.username;
-              document.getElementById('settings-new-nick').value = '';
-              showNotification('Нік успішно змінено!', 'success');
           });
       });
     }
 
     // --- СОЦІАЛЬНА СИСТЕМА (ДРУЗІ ТА ЧАТ) ---
-    
     function switchChatTab(tabName) {
         document.querySelectorAll('.chat-tab').forEach(el => el.classList.remove('active'));
         document.querySelectorAll('.chat-tab-content').forEach(el => el.classList.remove('active'));
@@ -868,7 +907,6 @@
         results.forEach(({ friend, html }) => {
             const isUnread = unreadDataObj[friend] === true;
             
-            // Тепер можна клікати на всю лінію гравця
             const fDiv = document.createElement('div');
             fDiv.className = 'friend-item';
             fDiv.onclick = () => openPrivateChat(friend);
@@ -975,7 +1013,18 @@
         });
     }
 
-    function logoutUser() { localStorage.removeItem('schoolClicker_lastUser'); location.reload(); }
+    function logoutUser() { 
+        localStorage.removeItem('schoolClicker_lastUser'); 
+        location.reload(); 
+        // Якщо перезагрузка заблокована у Телеграмі - викидаємо на екран вручну
+        setTimeout(() => {
+            document.getElementById('app').style.display = 'none';
+            document.getElementById('global-header').style.display = 'none';
+            document.getElementById('auth-screen').style.display = 'flex';
+            document.getElementById('reg-nickname').value = '';
+            document.getElementById('reg-password').value = '';
+        }, 500);
+    }
 
     function checkStreak() {
       const today = new Date(); today.setHours(0, 0, 0, 0); const todayTime = today.getTime();
