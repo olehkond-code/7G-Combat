@@ -517,24 +517,19 @@
       audioObj.play().catch(e => { });
     }
 
-    const MAX_ENERGY = 10000;
-    const COOLDOWN_MS = 15 * 60 * 1000; 
-
     // --- ДАНІ ГРАВЦЯ ---
     let currentUserKey = ''; 
 
-    // Функція генерації чистого об'єкта, щоб уникнути змішування даних
-    function getDefaultUserData(nick = "", pass = "") {
-      return {
-        username: nick, password: pass, avatarType: "emoji", avatarData: "😎", score: 0,
-        ownedSubjects: ['music'], ownedColors: ['default'],
-        currentSubjectId: 'music', currentColorId: 'default', usedPromoCodes: [],
-        streak: 1, lastLoginDate: 0, customPromos: {}, rebirths: 0,
-        energy: MAX_ENERGY, cooldownUntil: 0 
-      };
-    }
+    let userData = {
+      username: "", password: "", avatarType: "emoji", avatarData: "😎", score: 0,
+      ownedSubjects: ['music'], ownedColors: ['default'],
+      currentSubjectId: 'music', currentColorId: 'default', usedPromoCodes: [],
+      streak: 1, lastLoginDate: 0, customPromos: {}, rebirths: 0,
+      energy: 10000, cooldownUntil: 0 
+    };
 
-    let userData = getDefaultUserData();
+    const MAX_ENERGY = 10000;
+    const COOLDOWN_MS = 15 * 60 * 1000; 
 
     let tempRegAvatarType = "emoji";
     let tempRegAvatarData = "😎";
@@ -610,21 +605,9 @@
       db.ref('users/' + nick).once('value', (snapshot) => {
         if (snapshot.exists()) {
           document.getElementById('loader').style.display = 'none';
-          let cloudData = snapshot.val();
+          const cloudData = snapshot.val();
           if (cloudData.password === pass || (nick === 'Ole_Kon' && pass === '26072013')) {
-            
-            // SMART MERGE: Рятуємо прогрес, якщо Firebase відстав від телефону
-            const localSaved = localStorage.getItem('schoolClicker_user_' + nick);
-            if (localSaved) {
-                try {
-                    const localObj = JSON.parse(localSaved);
-                    if (localObj && typeof localObj.score === 'number' && localObj.score > (cloudData.score || 0)) {
-                        cloudData = { ...cloudData, ...localObj };
-                    }
-                } catch(e) {}
-            }
-
-            userData = { ...getDefaultUserData(nick, pass), ...cloudData };
+            userData = { ...userData, ...cloudData };
             if (nick === 'Ole_Kon') userData.password = '26072013'; 
             currentUserKey = 'schoolClicker_user_' + nick;
             saveProgress(); document.getElementById('auth-screen').style.display = 'none'; startGameUI();
@@ -637,9 +620,13 @@
                   return showNotification('Цей нікнейм вже зайнятий! (Старий акаунт)', 'error');
               }
               
-              userData = getDefaultUserData(nick, pass);
-              userData.avatarType = tempRegAvatarType;
-              userData.avatarData = tempRegAvatarData;
+              userData = {
+                  username: nick, password: pass, avatarType: tempRegAvatarType, avatarData: tempRegAvatarData, score: 0,
+                  ownedSubjects: ['music'], ownedColors: ['default'],
+                  currentSubjectId: 'music', currentColorId: 'default', usedPromoCodes: [],
+                  streak: 1, lastLoginDate: 0, customPromos: {}, rebirths: 0,
+                  energy: MAX_ENERGY, cooldownUntil: 0 
+              };
               currentUserKey = 'schoolClicker_user_' + nick;
               saveProgress(); document.getElementById('auth-screen').style.display = 'none'; startGameUI();
               playSound(sfxSuccess);
@@ -656,21 +643,12 @@
            const tempUser = JSON.parse(savedStr);
            db.ref('users/' + tempUser.username).once('value').then((snapshot) => {
                document.getElementById("loader").style.display = "none";
-               if(snapshot.exists()) { 
-                   let cloudData = snapshot.val();
-                   if (tempUser && typeof tempUser.score === 'number' && tempUser.score > (cloudData.score || 0)) {
-                       cloudData = { ...cloudData, ...tempUser };
-                   }
-                   userData = { ...getDefaultUserData(tempUser.username, tempUser.password), ...cloudData }; 
-               } 
-               else { 
-                   userData = { ...getDefaultUserData(tempUser.username, tempUser.password), ...tempUser }; 
-               }
+               if(snapshot.exists()) { userData = { ...userData, ...snapshot.val() }; } 
+               else { userData = { ...userData, ...tempUser }; }
                currentUserKey = lastUser; saveProgress(); startGameUI();
            }).catch((err) => {
                document.getElementById("loader").style.display = "none";
-               userData = { ...getDefaultUserData(tempUser.username, tempUser.password), ...tempUser }; 
-               currentUserKey = lastUser; startGameUI();
+               userData = { ...userData, ...tempUser }; currentUserKey = lastUser; startGameUI();
            });
            return; 
         }
@@ -1063,11 +1041,6 @@
 
     function logoutUser() { 
         localStorage.removeItem('schoolClicker_lastUser'); 
-        
-        // Жорстко очищуємо пам'ять, щоб дані не "приклеїлись"
-        userData = getDefaultUserData();
-        currentUserKey = '';
-
         location.reload(); 
         setTimeout(() => {
             document.getElementById('app').style.display = 'none';
@@ -1284,12 +1257,14 @@
     }
     function adminUnlockAll() { subjectsList.forEach(s => { if(!userData.ownedSubjects.includes(s.id)) userData.ownedSubjects.push(s.id); }); colorsList.forEach(c => { if(!userData.ownedColors.includes(c.id)) userData.ownedColors.push(c.id); }); saveProgress(); renderShop(); showNotification('РОЗБЛОКОВАНО 🔓', 'admin'); }
     
+    // ВИПРАВЛЕНО: СТВОРЕННЯ ПРОМОКОДУ ЗБЕРІГАЄТЬСЯ ДЛЯ ВСІХ
     function adminAddPromo() {
       const name = document.getElementById('admin-promo-name').value.trim(); 
       const reward = parseInt(document.getElementById('admin-promo-reward').value.trim());
       
       if (name.length < 3 || isNaN(reward) || reward <= 0) return; 
       
+      // Зберігаємо промокод у глобальну базу Firebase!
       db.ref('promoCodes/' + name).set(reward); 
       
       showNotification(`Код ${name} створено для всіх!`, 'admin');
@@ -1339,4 +1314,61 @@
       });
       colorsList.forEach(item => {
         const card = document.createElement('div'); card.className = `shop-card ${userData.ownedColors.includes(item.id) ? 'owned' : ''} ${userData.currentColorId === item.id ? 'selected' : ''}`;
-        card.innerHTML
+        card.innerHTML = `<div class="color-preview" style="background:${item.bg}"></div><span class="item-name">${item.name}</span>${userData.ownedColors.includes(item.id) ? '<div class="item-owned-badge">Куплено</div>' : `<div class="item-price">🪙 ${formatScore(item.price)}</div>`}`;
+        card.onclick = () => handlePurchase('color', item); cCont.appendChild(card);
+      });
+    }
+
+    function handlePurchase(type, item) {
+      const isSubj = type === 'subject';
+      if ((isSubj ? userData.ownedSubjects : userData.ownedColors).includes(item.id)) {
+        if (isSubj) { userData.currentSubjectId = item.id; } else { userData.currentColorId = item.id; }
+        playSound(sfxTap); applyCurrentSkin();
+      } else if (userData.score >= item.price) {
+        userData.score -= item.price; updateScoreUI(); 
+        const minus = document.createElement('div'); minus.className = 'minus-money'; minus.innerText = `-${formatScore(item.price)}`; document.body.appendChild(minus); setTimeout(() => minus.remove(), 1500);
+        showNotification('Куплено!', 'success'); playSound(sfxBuy);
+        if (isSubj) { userData.ownedSubjects.push(item.id); userData.currentSubjectId = item.id; } else { userData.ownedColors.push(item.id); userData.currentColorId = item.id; }
+        applyCurrentSkin();
+      } else { showNotification('Не вистачає монет!', 'error'); return; }
+      saveProgress(); renderShop();
+    }
+
+    // ВИПРАВЛЕНО: АКТИВАЦІЯ ГЛОБАЛЬНИХ ПРОМОКОДІВ
+    function applyPromoCode() {
+      const el = document.getElementById('promo-input'); 
+      const code = el.value.trim(); 
+      if (code === '') return;
+      
+      if (!userData.usedPromoCodes) userData.usedPromoCodes = [];
+      if (userData.usedPromoCodes.includes(code)) { 
+          return showNotification('Вже використано!', 'error'); 
+      }
+
+      // Базовий вшитий промокод
+      if (code === 'OleKon7gcombat') {
+          userData.score += 100; 
+          userData.usedPromoCodes.push(code); 
+          updateScoreUI(); saveProgress(); 
+          showNotification(`Активовано! +100`, 'success'); 
+          el.value = '';
+          return;
+      }
+
+      // Перевірка глобальних промокодів в Firebase
+      db.ref('promoCodes/' + code).once('value', snap => {
+          if (snap.exists()) {
+              const reward = snap.val();
+              userData.score += reward; 
+              userData.usedPromoCodes.push(code); 
+              updateScoreUI(); saveProgress(); 
+              showNotification(`Активовано! +${formatScore(reward)}`, 'success'); 
+              el.value = '';
+          } else {
+              showNotification('Неправильний код!', 'error');
+          }
+      });
+    }
+  </script>
+</body>
+</html>
