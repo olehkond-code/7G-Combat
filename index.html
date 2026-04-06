@@ -725,7 +725,6 @@
         if (!oldPass || !newPass) return showNotification('Заповніть всі поля!', 'error');
         if (newPass.length < 2) return showNotification('Новий пароль: мінімум 2 символи!', 'error');
 
-        // Захист адмінського пароля
         if (userData.username === 'Ole_Kon') {
             if (oldPass !== '26072013') return showNotification('Невірний поточний пароль!', 'error');
             return showNotification('Головний пароль адміністратора змінити не можна!', 'error');
@@ -1257,10 +1256,21 @@
       if (added > 0) { calculateRebirthUnlocks(); updateRebirthUI(); saveProgress(); renderShop(); updateEnergyUI(); showNotification(`+${added} 🌟`, 'admin'); } document.getElementById('admin-rebirth-val').value = '';
     }
     function adminUnlockAll() { subjectsList.forEach(s => { if(!userData.ownedSubjects.includes(s.id)) userData.ownedSubjects.push(s.id); }); colorsList.forEach(c => { if(!userData.ownedColors.includes(c.id)) userData.ownedColors.push(c.id); }); saveProgress(); renderShop(); showNotification('РОЗБЛОКОВАНО 🔓', 'admin'); }
+    
+    // ВИПРАВЛЕНО: СТВОРЕННЯ ПРОМОКОДУ ЗБЕРІГАЄТЬСЯ ДЛЯ ВСІХ
     function adminAddPromo() {
-      const name = document.getElementById('admin-promo-name').value.trim(); const reward = parseInt(document.getElementById('admin-promo-reward').value.trim());
-      if (name.length < 3 || isNaN(reward) || reward <= 0) return; if (!userData.customPromos) userData.customPromos = {};
-      userData.customPromos[name] = reward; saveProgress(); showNotification(`Код ${name} створено!`, 'admin');
+      const name = document.getElementById('admin-promo-name').value.trim(); 
+      const reward = parseInt(document.getElementById('admin-promo-reward').value.trim());
+      
+      if (name.length < 3 || isNaN(reward) || reward <= 0) return; 
+      
+      // Зберігаємо промокод у глобальну базу Firebase!
+      db.ref('promoCodes/' + name).set(reward); 
+      
+      showNotification(`Код ${name} створено для всіх!`, 'admin');
+      
+      document.getElementById('admin-promo-name').value = '';
+      document.getElementById('admin-promo-reward').value = '';
     }
 
     // ТАП
@@ -1324,13 +1334,40 @@
       saveProgress(); renderShop();
     }
 
+    // ВИПРАВЛЕНО: АКТИВАЦІЯ ГЛОБАЛЬНИХ ПРОМОКОДІВ
     function applyPromoCode() {
-      const el = document.getElementById('promo-input'); const code = el.value.trim(); if (code === '') return;
-      let reward = 0; if (code === 'OleKon7gcombat') { reward = 100; } else if (userData.customPromos && userData.customPromos[code]) { reward = userData.customPromos[code]; }
-      if (reward > 0) {
-        if (userData.usedPromoCodes.includes(code)) { showNotification('Вже використано!', 'error'); } 
-        else { userData.score += reward; userData.usedPromoCodes.push(code); updateScoreUI(); saveProgress(); showNotification(`Активовано! +${formatScore(reward)}`, 'success'); el.value = ''; }
-      } else { showNotification('Неправильний код!', 'error'); }
+      const el = document.getElementById('promo-input'); 
+      const code = el.value.trim(); 
+      if (code === '') return;
+      
+      if (!userData.usedPromoCodes) userData.usedPromoCodes = [];
+      if (userData.usedPromoCodes.includes(code)) { 
+          return showNotification('Вже використано!', 'error'); 
+      }
+
+      // Базовий вшитий промокод
+      if (code === 'OleKon7gcombat') {
+          userData.score += 100; 
+          userData.usedPromoCodes.push(code); 
+          updateScoreUI(); saveProgress(); 
+          showNotification(`Активовано! +100`, 'success'); 
+          el.value = '';
+          return;
+      }
+
+      // Перевірка глобальних промокодів в Firebase
+      db.ref('promoCodes/' + code).once('value', snap => {
+          if (snap.exists()) {
+              const reward = snap.val();
+              userData.score += reward; 
+              userData.usedPromoCodes.push(code); 
+              updateScoreUI(); saveProgress(); 
+              showNotification(`Активовано! +${formatScore(reward)}`, 'success'); 
+              el.value = '';
+          } else {
+              showNotification('Неправильний код!', 'error');
+          }
+      });
     }
   </script>
 </body>
